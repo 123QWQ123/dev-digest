@@ -53,3 +53,35 @@ export function deriveReviewStatus(args: {
   if (updatedAt && now - updatedAt.getTime() > staleMs) return 'stale';
   return 'reviewed';
 }
+
+/** One `agent_runs` row as needed for the PR-list cost rollup. */
+export interface RunCostRow {
+  prId: string;
+  agentId: string | null;
+  status: string | null;
+  costUsd: number | null;
+}
+
+/**
+ * PR-list COST = the "latest review round" (M1): per (PR, agent) the newest
+ * DONE run, summing the non-null costs. Rows MUST be ordered newest-first.
+ * Failed/cancelled runs are ignored; a PR with no known cost maps to null
+ * (rendered "—", never "$0.00"). Runs whose agent was deleted share one
+ * `null` bucket — only the newest of them counts.
+ */
+export function latestRoundCost(rows: RunCostRow[]): Map<string, number | null> {
+  const seen = new Set<string>();
+  const out = new Map<string, number | null>();
+  for (const r of rows) {
+    if (r.status !== 'done') continue;
+    const key = `${r.prId}\u0000${r.agentId ?? ''}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (r.costUsd == null) {
+      if (!out.has(r.prId)) out.set(r.prId, null);
+      continue;
+    }
+    out.set(r.prId, (out.get(r.prId) ?? 0) + r.costUsd);
+  }
+  return out;
+}

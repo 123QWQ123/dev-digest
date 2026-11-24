@@ -6,7 +6,7 @@
  * + age, so it gets unit coverage independent of the route's queries.
  */
 import { describe, it, expect } from 'vitest';
-import { deriveReviewStatus, rollupSeverities, STALE_DAYS } from '../src/modules/pulls/status.js';
+import { deriveReviewStatus, latestRoundCost, rollupSeverities, STALE_DAYS } from '../src/modules/pulls/status.js';
 
 const DAY = 86_400_000;
 const now = Date.UTC(2026, 5, 11);
@@ -64,5 +64,35 @@ describe('rollupSeverities', () => {
 
   it('is all-zero for no findings', () => {
     expect(rollupSeverities([])).toEqual({ critical: 0, warning: 0, suggestion: 0 });
+  });
+});
+
+describe('latestRoundCost (M1 PR-list COST)', () => {
+  const run = (prId: string, agentId: string | null, costUsd: number | null, status = 'done') => ({
+    prId,
+    agentId,
+    status,
+    costUsd,
+  });
+
+  it('sums the newest done run of each agent, ignoring older reruns', () => {
+    // newest-first: agent a's 0.002 rerun supersedes its older 0.005
+    const m = latestRoundCost([run('p1', 'a', 0.002), run('p1', 'b', 0.003), run('p1', 'a', 0.005)]);
+    expect(m.get('p1')).toBeCloseTo(0.005);
+  });
+
+  it('ignores failed / cancelled runs (an older done run still counts)', () => {
+    const m = latestRoundCost([run('p1', 'a', null, 'failed'), run('p1', 'a', 0.004)]);
+    expect(m.get('p1')).toBeCloseTo(0.004);
+  });
+
+  it('skips unknown costs, but keeps a known 0 distinct from unknown', () => {
+    expect(latestRoundCost([run('p1', 'a', null), run('p1', 'b', 0.001)]).get('p1')).toBeCloseTo(0.001);
+    expect(latestRoundCost([run('p1', 'a', null)]).get('p1')).toBeNull();
+    expect(latestRoundCost([run('p1', 'a', 0)]).get('p1')).toBe(0);
+  });
+
+  it('has no entry for a PR without done runs', () => {
+    expect(latestRoundCost([run('p1', 'a', 0.01, 'cancelled')]).has('p1')).toBe(false);
   });
 });

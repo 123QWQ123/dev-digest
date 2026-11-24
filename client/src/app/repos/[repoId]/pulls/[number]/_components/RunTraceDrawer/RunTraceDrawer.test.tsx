@@ -44,6 +44,8 @@ describe("A5 Run Trace drawer (smoke)", () => {
     expect(screen.getByText("Configuration")).toBeInTheDocument();
     expect(screen.getByText("Stats")).toBeInTheDocument();
     expect(screen.getByText("2/2 passed")).toBeInTheDocument();
+    // M1: the fixture predates cost_usd → the COST tile reads "—", not "$0.00".
+    expect(screen.getByText("COST").nextElementSibling).toHaveTextContent("—");
     expect(screen.getByText("Tool calls")).toBeInTheDocument();
   });
 
