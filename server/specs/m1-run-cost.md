@@ -18,12 +18,12 @@ already returns `costUsd` (`reviewer-core` `reviewPullRequest` → OpenRouter
 - `null` means "unknown"; `0` means "known free model". They must not be conflated.
 - `GET /pulls/:id/runs` → every `RunSummary` carries `cost_usd` (nullable).
 - `GET /runs/:id/trace` → `stats.cost_usd` (nullish: traces written before M1 lack it).
-- `GET /repos/:id/pulls` → `PrMeta.cost_usd` = **latest review round**: for each
-  `(pr, agent)` take the newest run with `status='done'`; sum their non-null
-  `cost_usd`. No known cost → `null`. Pure helper `latestRoundCost` in `modules/pulls/status.ts`.
+- `GET /repos/:id/pulls` → `PrMeta.cost_usd` = **total spend on the PR**: the sum of
+  the non-null `cost_usd` of every run of the PR (all agents, reruns included).
+  No known cost → `null`. Pure helper `totalPrCost` in `modules/pulls/status.ts`.
 
 ## Acceptance criteria
 - A new done run has a non-null `cost_usd` when the provider reports one.
 - Old runs return `cost_usd: null`; old traces still parse.
-- PR cost ignores failed runs and older runs of the same agent.
+- PR cost is the sum of all runs' known costs (reruns included); unknown costs are skipped.
 - Migration is additive (nullable column), no existing migrations edited.

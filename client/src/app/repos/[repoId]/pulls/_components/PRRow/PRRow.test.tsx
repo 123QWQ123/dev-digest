@@ -2,6 +2,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { PrMeta } from "@/lib/types";
 import messages from "../../../../../../../messages/en/prReview.json";
 import common from "../../../../../../../messages/en/common.json";
@@ -34,9 +35,11 @@ const PR: PrMeta = {
 
 function renderRow(pr: PrMeta) {
   return render(
-    <NextIntlClientProvider locale="en" messages={{ prReview: messages, common }}>
-      <PRRow pr={pr} repoId="r1" />
-    </NextIntlClientProvider>,
+    <QueryClientProvider client={new QueryClient()}>
+      <NextIntlClientProvider locale="en" messages={{ prReview: messages, common }}>
+        <PRRow pr={pr} repoId="r1" />
+      </NextIntlClientProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -47,8 +50,8 @@ describe("PRRow — cost column", () => {
     cleanup();
 
     renderRow({ ...PR, score: null, cost_usd: null });
-    // score and cost cells both render "—" for an unreviewed PR
-    expect(screen.getAllByText("—")).toHaveLength(2);
+    // score, findings and cost cells all render "—" for an unreviewed PR
+    expect(screen.getAllByText("—")).toHaveLength(3);
     expect(screen.queryByText("$0.00")).not.toBeInTheDocument();
   });
 });

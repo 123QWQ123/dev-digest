@@ -6,7 +6,7 @@ Show the cost of agent reviews in three places, from data the API already return
 
 ## Screens
 1. **PR list**: a `COST` column between `STATUS` and `UPDATED`; value = `PrMeta.cost_usd`
-   (latest review round). Compact: `$0.014`.
+   (total spend: sum of all runs of the PR). Compact: `$0.014`.
 2. **Agent runs timeline** (PR detail): under the run time, `9 119 tok · $0.0013`,
    only for `status === "done"` runs. Tokens = `tokens_in + tokens_out`.
 3. **Run trace drawer → Stats**: a `COST` tile between `TOKENS` and `FINDINGS`.

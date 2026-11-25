@@ -6,7 +6,7 @@
  * + age, so it gets unit coverage independent of the route's queries.
  */
 import { describe, it, expect } from 'vitest';
-import { deriveReviewStatus, latestRoundCost, rollupSeverities, STALE_DAYS } from '../src/modules/pulls/status.js';
+import { deriveReviewStatus, latestReviewPerAgent, rollupSeverities, totalPrCost, STALE_DAYS } from '../src/modules/pulls/status.js';
 
 const DAY = 86_400_000;
 const now = Date.UTC(2026, 5, 11);
@@ -67,32 +67,40 @@ describe('rollupSeverities', () => {
   });
 });
 
-describe('latestRoundCost (M1 PR-list COST)', () => {
-  const run = (prId: string, agentId: string | null, costUsd: number | null, status = 'done') => ({
-    prId,
-    agentId,
-    status,
-    costUsd,
-  });
+describe('totalPrCost (M1 PR-list COST)', () => {
+  const run = (prId: string, costUsd: number | null) => ({ prId, costUsd });
 
-  it('sums the newest done run of each agent, ignoring older reruns', () => {
-    // newest-first: agent a's 0.002 rerun supersedes its older 0.005
-    const m = latestRoundCost([run('p1', 'a', 0.002), run('p1', 'b', 0.003), run('p1', 'a', 0.005)]);
-    expect(m.get('p1')).toBeCloseTo(0.005);
-  });
-
-  it('ignores failed / cancelled runs (an older done run still counts)', () => {
-    const m = latestRoundCost([run('p1', 'a', null, 'failed'), run('p1', 'a', 0.004)]);
-    expect(m.get('p1')).toBeCloseTo(0.004);
+  it('sums every run of the PR, reruns included', () => {
+    const m = totalPrCost([run('p1', 0.002), run('p1', 0.003), run('p1', 0.005), run('p2', 0.001)]);
+    expect(m.get('p1')).toBeCloseTo(0.01);
+    expect(m.get('p2')).toBeCloseTo(0.001);
   });
 
   it('skips unknown costs, but keeps a known 0 distinct from unknown', () => {
-    expect(latestRoundCost([run('p1', 'a', null), run('p1', 'b', 0.001)]).get('p1')).toBeCloseTo(0.001);
-    expect(latestRoundCost([run('p1', 'a', null)]).get('p1')).toBeNull();
-    expect(latestRoundCost([run('p1', 'a', 0)]).get('p1')).toBe(0);
+    expect(totalPrCost([run('p1', null), run('p1', 0.001)]).get('p1')).toBeCloseTo(0.001);
+    expect(totalPrCost([run('p1', 0.001), run('p1', null)]).get('p1')).toBeCloseTo(0.001);
+    expect(totalPrCost([run('p1', null)]).get('p1')).toBeNull();
+    expect(totalPrCost([run('p1', 0)]).get('p1')).toBe(0);
   });
 
-  it('has no entry for a PR without done runs', () => {
-    expect(latestRoundCost([run('p1', 'a', 0.01, 'cancelled')]).has('p1')).toBe(false);
+  it('has no entry for a PR without runs', () => {
+    expect(totalPrCost([]).has('p1')).toBe(false);
+  });
+});
+
+describe('latestReviewPerAgent (M1 PR-list FINDINGS)', () => {
+  const rv = (id: string, prId: string, agentId: string | null) => ({ id, prId, agentId });
+
+  it('keeps the newest review of EVERY agent, dropping older reruns', () => {
+    // newest-first: general rerun r3 supersedes r1; security r2 still counts
+    const m = latestReviewPerAgent([rv('r3', 'p1', 'general'), rv('r2', 'p1', 'security'), rv('r1', 'p1', 'general')]);
+    expect(m.get('p1')).toEqual(['r3', 'r2']);
+  });
+
+  it('groups per PR and buckets deleted agents (null) together', () => {
+    const m = latestReviewPerAgent([rv('a', 'p1', null), rv('b', 'p2', 'x'), rv('c', 'p1', null)]);
+    expect(m.get('p1')).toEqual(['a']);
+    expect(m.get('p2')).toEqual(['b']);
+    expect(m.has('p3')).toBe(false);
   });
 });

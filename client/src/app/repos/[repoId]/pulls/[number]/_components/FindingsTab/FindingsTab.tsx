@@ -24,6 +24,9 @@ interface FindingsTabProps {
   onOpenTrace: (id: string) => void;
   onDelete: (id: string) => void;
   onRunDone: () => void;
+  /** Deep link (`?run=…&finding=…`, e.g. from the PR list's FINDINGS popover):
+   *  open that run's accordion and expand + scroll to the finding on load. */
+  initialTarget?: { runId: string; findingId: string | null } | null;
 }
 
 export function FindingsTab({
@@ -40,6 +43,7 @@ export function FindingsTab({
   onOpenTrace,
   onDelete,
   onRunDone,
+  initialTarget = null,
 }: FindingsTabProps) {
   const handleCancelAll = useCallback(() => {
     liveRunIds.forEach((id) => cancelMutation.mutate(id));
@@ -63,12 +67,22 @@ export function FindingsTab({
     [onDelete],
   );
 
+  // run_id → findings, for the timeline's critical/warning hover popovers.
+  const findingsByRun = React.useMemo(() => {
+    const m: Record<string, FindingRecord[]> = {};
+    for (const r of runs) if (r.run_id) (m[r.run_id] ??= []).push(...r.findings);
+    return m;
+  }, [runs]);
+
   // Timeline → Review-runs navigation: clicking an agent name in the timeline
   // opens + scrolls to that run's accordion below. The nonce re-triggers the
   // scroll even when the same run is clicked twice.
-  const [target, setTarget] = React.useState<{ runId: string; n: number } | null>(null);
-  const handleGoToReview = useCallback((runId: string) => {
-    setTarget((p) => ({ runId, n: (p?.n ?? 0) + 1 }));
+  // A findingId (click inside a severity popover) also expands + scrolls to it.
+  const [target, setTarget] = React.useState<{ runId: string; findingId: string | null; n: number } | null>(
+    () => (initialTarget ? { ...initialTarget, n: 1 } : null),
+  );
+  const handleGoToReview = useCallback((runId: string, findingId?: string) => {
+    setTarget((p) => ({ runId, findingId: findingId ?? null, n: (p?.n ?? 0) + 1 }));
   }, []);
 
   return (
@@ -134,6 +148,7 @@ export function FindingsTab({
             onOpenTrace={handleOpenTrace}
             onGoToReview={handleGoToReview}
             onDelete={handleDelete}
+            findingsByRun={findingsByRun}
           />
         </div>
       )}
@@ -163,6 +178,7 @@ export function FindingsTab({
             repoFullName={repoFullName}
             headSha={headSha}
             targetRunId={target?.runId ?? null}
+            targetFindingId={target?.findingId ?? null}
             targetNonce={target?.n ?? 0}
           />
         ))

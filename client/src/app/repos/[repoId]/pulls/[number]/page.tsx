@@ -153,6 +153,9 @@ export default function PRDetailPage() {
               if (window.confirm("Delete this run from history? (its logs are removed too)"))
                 deleteRun.mutate(id);
             }}
+            initialTarget={
+              search.get("run") ? { runId: search.get("run")!, findingId: search.get("finding") } : null
+            }
             onRunDone={() => {
               invalidateActiveRuns();
               invalidateRunHistory();

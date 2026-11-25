@@ -31,8 +31,12 @@ export function FindingCard({
   pending,
   repoFullName,
   headSha,
+  revealNonce,
 }: {
   f: FindingRecord;
+  /** Set (and bumped on each request) when navigation targets this card:
+   *  it expands and scrolls into view. */
+  revealNonce?: number;
   focused?: boolean;
   defaultExpanded?: boolean;
   onAction?: (action: FindingActionKind, reply?: string) => void;
@@ -42,6 +46,16 @@ export function FindingCard({
 }) {
   const t = useTranslations("prReview");
   const [expanded, setExpanded] = React.useState(defaultExpanded ?? false);
+  const rootRef = React.useRef<HTMLDivElement | null>(null);
+  React.useEffect(() => {
+    if (revealNonce == null) return;
+    setExpanded(true);
+    // Next frame: the expanded body is laid out, so "center" lands correctly.
+    const id = requestAnimationFrame(() =>
+      rootRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" }),
+    );
+    return () => cancelAnimationFrame(id);
+  }, [revealNonce]);
   const sevColor = SEV_COLOR[f.severity] ?? SEV_COLOR_FALLBACK;
   const fileHref =
     repoFullName && headSha
@@ -52,7 +66,7 @@ export function FindingCard({
   const muted = accepted || dismissed;
 
   return (
-    <div data-finding-id={f.id} style={s.card(!!focused, sevColor, muted)}>
+    <div ref={rootRef} data-finding-id={f.id} style={s.card(!!focused, sevColor, muted)}>
       <div onClick={() => setExpanded((e) => !e)} style={s.header}>
         <div style={s.badgeWrap}>
           <SeverityBadge severity={f.severity as Severity} compact />
