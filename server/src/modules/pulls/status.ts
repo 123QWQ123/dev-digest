@@ -53,3 +53,56 @@ export function deriveReviewStatus(args: {
   if (updatedAt && now - updatedAt.getTime() > staleMs) return 'stale';
   return 'reviewed';
 }
+
+/** One `agent_runs` row as needed for the PR-list cost rollup. */
+export interface RunCostRow {
+  prId: string;
+  costUsd: number | null;
+}
+
+/**
+ * PR-list COST = total spend on the PR (M1): the sum of the known (non-null)
+ * `cost_usd` of EVERY run — reruns included, any agent, any status (failed /
+ * cancelled runs store NULL today, so they add nothing). A PR with runs but no
+ * known cost maps to null (rendered "—", never "$0.00"); a PR without runs has
+ * no entry.
+ */
+export function totalPrCost(rows: RunCostRow[]): Map<string, number | null> {
+  const out = new Map<string, number | null>();
+  for (const r of rows) {
+    if (r.costUsd == null) {
+      if (!out.has(r.prId)) out.set(r.prId, null);
+      continue;
+    }
+    out.set(r.prId, (out.get(r.prId) ?? 0) + r.costUsd);
+  }
+  return out;
+}
+
+/** One `reviews` row as needed for the PR-list FINDINGS rollup. */
+export interface ReviewRoundRow {
+  id: string;
+  prId: string;
+  agentId: string | null;
+}
+
+/**
+ * PR-list FINDINGS = the "latest review round": per (PR, agent) only the
+ * NEWEST review counts; older reruns of the same agent are ignored. Rows MUST
+ * be ordered newest-first. Reviews whose agent was deleted share one `null`
+ * bucket. Returns PR id → review ids (newest-first); PRs without reviews have
+ * no entry.
+ */
+export function latestReviewPerAgent(rows: ReviewRoundRow[]): Map<string, string[]> {
+  const seen = new Set<string>();
+  const out = new Map<string, string[]>();
+  for (const r of rows) {
+    const key = `${r.prId}\u0000${r.agentId ?? ''}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const ids = out.get(r.prId);
+    if (ids) ids.push(r.id);
+    else out.set(r.prId, [r.id]);
+  }
+  return out;
+}

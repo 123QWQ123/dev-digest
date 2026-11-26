@@ -3,7 +3,7 @@ import { GRID } from "./constants";
 
 /** Co-located styles for the PR list page (extracted from inline styles). */
 export const s = {
-  row: (hover: boolean): CSSProperties => ({
+  row: (hover: boolean, last = false): CSSProperties => ({
     display: "grid",
     gridTemplateColumns: GRID,
     alignItems: "center",
@@ -13,6 +13,9 @@ export const s = {
     cursor: "pointer",
     background: hover ? "var(--bg-surface)" : "transparent",
     transition: "background .1s",
+    // The card no longer clips (so FINDINGS popovers can overflow it) — round
+    // the last row's hover background to the card's corners instead.
+    ...(last ? { borderRadius: "0 0 10px 10px" } : {}),
   }),
   rowTitleCell: {
     minWidth: 0,
@@ -40,6 +43,7 @@ export const s = {
   } satisfies CSSProperties,
   sizeBadgeBorder: (color: string): CSSProperties => ({ border: `1px solid ${color}` }),
   scoreCell: { display: "flex", alignItems: "center" } satisfies CSSProperties,
+  findingsCell: { display: "flex", alignItems: "center", gap: 10, fontSize: 12 } satisfies CSSProperties,
   updatedCell: {
     fontSize: 12,
     color: "var(--text-muted)",
@@ -87,7 +91,9 @@ export const s = {
     margin: "14px 32px 44px",
     border: "1px solid var(--border)",
     borderRadius: 10,
-    overflow: "hidden",
+    // visible, not hidden: FINDINGS hover popovers must overflow the card
+    // (with one PR in the list the popover hangs below the last row).
+    overflow: "visible",
     background: "var(--bg-elevated)",
   } satisfies CSSProperties,
   headRow: {

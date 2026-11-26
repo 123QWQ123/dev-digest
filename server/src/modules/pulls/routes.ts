@@ -7,7 +7,13 @@ import * as t from '../../db/schema.js';
 import { getContext } from '../_shared/context.js';
 import { IdParams } from '../_shared/schemas.js';
 import { AppError, NotFoundError } from '../../platform/errors.js';
-import { deriveReviewStatus } from './status.js';
+import {
+  deriveReviewStatus,
+  latestReviewPerAgent,
+  rollupSeverities,
+  totalPrCost,
+  type SeverityCounts,
+} from './status.js';
 
 /**
  * F1 — pulls module. PR import via Octokit (list + per-PR detail).
@@ -111,22 +117,57 @@ export default async function pullsRoutes(appBase: FastifyInstance) {
       }
     }
 
-    // Latest-review SCORE per PR for the list's score ring. Computed on read
-    // from reviews (no FK denorm); the list is small, so one IN-query + JS
-    // grouping is cheap. (The per-severity FINDINGS breakdown is intentionally
-    // not surfaced on the list — findings live on the PR detail page.)
+    // SCORE ring = the PR's latest review. FINDINGS counters = the latest
+    // review round: the newest review of EVERY agent, severities summed (the
+    // findings themselves are fetched lazily by the client on hover).
+    // Computed on read from reviews (no FK denorm); the list is small, so
+    // IN-queries + JS grouping are cheap.
     const prIds = rows.map((r) => r.id);
     const latestReviewByPr = new Map<string, { score: number | null }>();
+    const roundByPr = new Map<string, { reviewIds: string[]; counts: SeverityCounts }>();
+    // M1 — COST column: total spend on the PR = sum of every run's known cost.
+    let costByPr = new Map<string, number | null>();
     if (prIds.length > 0) {
-      const reviewRows = await container.db
-        .select({ prId: t.reviews.prId, score: t.reviews.score })
-        .from(t.reviews)
-        .where(and(inArray(t.reviews.prId, prIds), eq(t.reviews.kind, 'review')))
-        .orderBy(desc(t.reviews.createdAt));
+      // Independent reads → run in parallel.
+      const [reviewRows, runRows] = await Promise.all([
+        container.db
+          .select({ id: t.reviews.id, prId: t.reviews.prId, agentId: t.reviews.agentId, score: t.reviews.score })
+          .from(t.reviews)
+          .where(and(inArray(t.reviews.prId, prIds), eq(t.reviews.kind, 'review')))
+          .orderBy(desc(t.reviews.createdAt)),
+        container.db
+          .select({
+            prId: t.agentRuns.prId,
+            costUsd: t.agentRuns.costUsd,
+          })
+          .from(t.agentRuns)
+          .where(and(eq(t.agentRuns.workspaceId, workspaceId), inArray(t.agentRuns.prId, prIds))),
+      ]);
       // Rows are newest-first → first seen per PR is the latest review.
       for (const rv of reviewRows) {
         if (!latestReviewByPr.has(rv.prId)) latestReviewByPr.set(rv.prId, { score: rv.score });
       }
+      const roundIds = latestReviewPerAgent(reviewRows);
+      const allRoundIds = [...roundIds.values()].flat();
+      if (allRoundIds.length > 0) {
+        const findingRows = await container.db
+          .select({ reviewId: t.findings.reviewId, severity: t.findings.severity })
+          .from(t.findings)
+          .where(inArray(t.findings.reviewId, allRoundIds));
+        const byReview = new Map<string, { severity: string }[]>();
+        for (const f of findingRows) {
+          const list = byReview.get(f.reviewId);
+          if (list) list.push(f);
+          else byReview.set(f.reviewId, [f]);
+        }
+        for (const [prId, reviewIds] of roundIds) {
+          roundByPr.set(prId, {
+            reviewIds,
+            counts: rollupSeverities(reviewIds.flatMap((id) => byReview.get(id) ?? [])),
+          });
+        }
+      }
+      costByPr = totalPrCost(runRows.filter((r): r is typeof r & { prId: string } => r.prId != null));
     }
 
     const now = Date.now();
@@ -153,6 +194,10 @@ export default async function pullsRoutes(appBase: FastifyInstance) {
         opened_at: r.openedAt?.toISOString() ?? null,
         updated_at: r.updatedAt?.toISOString() ?? null,
         score: review ? review.score : null,
+        latest_round: roundByPr.has(r.id)
+          ? { review_ids: roundByPr.get(r.id)!.reviewIds, ...roundByPr.get(r.id)!.counts }
+          : null,
+        cost_usd: costByPr.get(r.id) ?? null,
       };
     });
   });

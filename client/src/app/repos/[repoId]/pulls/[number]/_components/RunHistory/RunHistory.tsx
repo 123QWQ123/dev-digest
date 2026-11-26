@@ -3,7 +3,9 @@
 import React from "react";
 import { useTranslations } from "next-intl";
 import { Badge, Icon, CircularScore, type IconName } from "@devdigest/ui";
-import type { RunSummary, PrCommit } from "@devdigest/shared";
+import type { RunSummary, PrCommit, FindingRecord } from "@devdigest/shared";
+import { RunCostBadge } from "@/components/run-cost";
+import { SeverityCountPopover } from "./SeverityCountPopover";
 
 /**
  * PR timeline — every agent run interleaved with the PR's commits, newest-first
@@ -90,13 +92,18 @@ export function RunHistory({
   onOpenTrace,
   onGoToReview,
   onDelete,
+  findingsByRun,
 }: {
   runs: RunSummary[];
   commits?: PrCommit[];
+  /** Persisted findings per run_id — feeds the critical/warning/suggestion hover popovers. */
+  findingsByRun?: Record<string, FindingRecord[]>;
   /** Open the trace + log drawer for a run (the logs icon). */
   onOpenTrace: (runId: string) => void;
   /** Jump to this run's inline review accordion below (clicking the agent name). */
-  onGoToReview?: (runId: string) => void;
+  /** Jump to this run's review accordion below; with a findingId, also expand and
+   *  scroll to that finding (a click inside a severity popover). */
+  onGoToReview?: (runId: string, findingId?: string) => void;
   onDelete?: (runId: string) => void;
 }) {
   const t = useTranslations("prReview");
@@ -188,15 +195,37 @@ export function RunHistory({
                   {r.error}
                 </div>
               )}
-              {settled && (
-                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                  {t("runStatus.findings", { count: r.findings_count ?? 0 })}
-                  {(r.blockers ?? 0) > 0 ? t("runStatus.blockers", { count: r.blockers ?? 0 }) : ""}
-                </div>
-              )}
+              {settled && (() => {
+                const fs = findingsByRun?.[r.run_id] ?? [];
+                const crit = fs.filter((f) => f.severity === "CRITICAL");
+                const warn = fs.filter((f) => f.severity === "WARNING");
+                const sugg = fs.filter((f) => f.severity === "SUGGESTION");
+                const goToReview = onGoToReview
+                  ? (findingId?: string) => onGoToReview(r.run_id, findingId)
+                  : undefined;
+                return (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--text-muted)" }}>
+                    <SeverityCountPopover severity="CRITICAL" findings={crit} onSelect={goToReview} />
+                    <SeverityCountPopover severity="WARNING" findings={warn} onSelect={goToReview} />
+                    <SeverityCountPopover severity="SUGGESTION" findings={sugg} onSelect={goToReview} />
+                    {/* Text fallback when no CRITICAL/WARNING/SUGGESTION findings are loaded for this run. */}
+                    {crit.length + warn.length + sugg.length === 0 && (
+                      <span>{t("runStatus.findings", { count: r.findings_count ?? 0 })}</span>
+                    )}
+                    {(r.blockers ?? 0) > 0 && <span>{t("runStatus.blockers", { count: r.blockers ?? 0 })}</span>}
+                  </div>
+                );
+              })()}
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>
               {r.ran_at && <span>{new Date(r.ran_at).toLocaleTimeString()}</span>}
+              {r.status === "done" && (
+                <RunCostBadge
+                  variant="detailed"
+                  costUsd={r.cost_usd}
+                  tokens={r.tokens_in != null || r.tokens_out != null ? (r.tokens_in ?? 0) + (r.tokens_out ?? 0) : null}
+                />
+              )}
             </div>
             <button
               type="button"

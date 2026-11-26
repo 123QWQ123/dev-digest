@@ -97,6 +97,12 @@ export class JobRunner {
       }
     }) as Promise<void>;
 
+    // Most callers fire-and-forget (the failure is already persisted on the
+    // `jobs` row above). Without a handler, a failed job — e.g. a clone of a
+    // repo that doesn't exist — is an unhandled rejection and kills the API.
+    // Callers that await `done` still see the rejection.
+    done.catch(() => {});
+
     return { id: jobId, done };
   }
 
