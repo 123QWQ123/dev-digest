@@ -82,6 +82,8 @@
     "invalid": "Fill in a valid name, a description and a body."
   },
   "preview": {
+    "title": "Preview",
+    "hint": "Rendered as the reviewing agent receives it.",
     "untrustedBadge": "imported — untrusted",
     "untrustedNotice": "This skill came from outside the workspace. Its body is someone else's instructions inside your agents' prompt — read it before enabling it for an agent.",
     "empty": "This skill has no body."

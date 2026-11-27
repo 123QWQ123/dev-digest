@@ -2,13 +2,14 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
-import { Badge, Button, Icon, Markdown, Tabs } from "@devdigest/ui";
+import { Badge, Button, Icon, Tabs } from "@devdigest/ui";
 import type { Skill } from "@devdigest/shared";
 import { useDeleteSkill, useUpdateSkill } from "@/lib/hooks/skills";
 import { useToast } from "@/lib/toast";
 import { SkillTypeBadge } from "@/components/skills";
 import { DETAIL_TABS } from "../../constants";
 import { isUntrusted } from "../../helpers";
+import { PreviewTab } from "../PreviewTab";
 import { SkillForm, type SkillFormValues } from "../SkillForm";
 import { StatsTab } from "../StatsTab";
 import { VersionsTab } from "../VersionsTab";
@@ -85,12 +86,7 @@ export function SkillDetail({
         <Tabs tabs={tabs} value={tab} onChange={onTab} pad="0 28px" />
       </div>
       <div style={s.body}>
-        {tab === "preview" && (
-          <div style={s.preview}>
-            {untrusted && <div style={s.notice}>{t("preview.untrustedNotice")}</div>}
-            {skill.body ? <Markdown>{skill.body}</Markdown> : <p>{t("preview.empty")}</p>}
-          </div>
-        )}
+        {tab === "preview" && <PreviewTab skill={skill} />}
         {tab === "stats" && <StatsTab skillId={skill.id} />}
         {tab === "versions" && <VersionsTab skill={skill} />}
         {tab === "config" && (

@@ -7,14 +7,4 @@ export const s = {
   actions: { marginLeft: "auto" } satisfies CSSProperties,
   tabsBar: { marginTop: 14 } satisfies CSSProperties,
   body: { flex: 1, minHeight: 0, overflow: "auto", padding: 28 } satisfies CSSProperties,
-  preview: { maxWidth: 820, fontSize: 14 } satisfies CSSProperties,
-  notice: {
-    fontSize: 13,
-    color: "var(--text-secondary)",
-    background: "var(--warn-bg)",
-    border: "1px solid var(--warn)",
-    borderRadius: 8,
-    padding: "10px 12px",
-    marginBottom: 16,
-  } satisfies CSSProperties,
 } as const;

@@ -22,3 +22,44 @@
     transform: translateY(0);
   }
 }
+
+/* Long-form markdown inside a card (skill preview). Tailwind preflight strips
+   heading sizes and list bullets, so restore them — scoped, never global. */
+.skill-prose .dd-md { line-height: 1.75; }
+.skill-prose h1,
+.skill-prose h2,
+.skill-prose h3,
+.skill-prose h4 {
+  color: var(--text-primary);
+  font-weight: 650;
+  line-height: 1.3;
+}
+.skill-prose h1 { font-size: 22px; margin: 0 0 16px; }
+.skill-prose h2 { font-size: 17px; margin: 22px 0 10px; }
+.skill-prose h3 { font-size: 15px; margin: 18px 0 8px; }
+.skill-prose h4 { font-size: 14px; margin: 14px 0 6px; }
+.skill-prose > .dd-md > :first-child { margin-top: 0; }
+.skill-prose ul,
+.skill-prose ol { margin: 0 0 12px; padding-left: 22px; }
+.skill-prose ul { list-style: disc; }
+.skill-prose ol { list-style: decimal; }
+.skill-prose li { margin: 4px 0; }
+.skill-prose li::marker { color: var(--text-muted); }
+.skill-prose blockquote {
+  margin: 0 0 12px;
+  padding-left: 12px;
+  border-left: 3px solid var(--border);
+  color: var(--text-muted);
+}
+.skill-prose pre {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--bg-hover);
+  overflow-x: auto;
+}
+.skill-prose pre code { padding: 0; background: none; }
+.skill-prose hr { border: 0; border-top: 1px solid var(--border); margin: 18px 0; }
+.skill-prose table { border-collapse: collapse; margin: 0 0 12px; }
+.skill-prose th,
+.skill-prose td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }

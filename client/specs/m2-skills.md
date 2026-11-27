@@ -14,8 +14,10 @@ The backend is described in `server/specs/m2-skills.md`.
      - **Config**: name, description, type, body (mono textarea with a char count),
        optional version note, and Save. Under the description: *"This is the skill's interface:
        write it as a directive (e.g. "Use when… Flag…")."*
-     - **Preview**: the rendered markdown body. Skills with `source !== manual` get a
-       "Imported — untrusted" badge.
+     - **Preview**: "Preview" title + hint, then the markdown body in a card (`PreviewTab`; prose
+       typography is scoped to `.skill-prose` in `globals.css`, because Tailwind preflight strips
+       heading sizes and list bullets). Skills with `source !== manual` get a
+       "Imported — untrusted" badge and notice.
      - **Stats**: tiles Used by / Pull frequency / Accept rate (ring) / Findings (30d); "Agents using
        this skill" with Open links; "Findings by category" donut (counts). Footnote explains attribution.
      - **Versions**: version history (vN, note, date, Current), a Diff modal (line diff against
