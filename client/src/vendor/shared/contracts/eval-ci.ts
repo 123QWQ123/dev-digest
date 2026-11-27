@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { Verdict, Finding } from './findings.js';
-import { EvalRun, EvalOwnerKind, Conformance, Provider, CiFailOn } from './knowledge.js';
+import { EvalRun, EvalOwnerKind, Conformance, Provider, CiFailOn, ReviewStrategy } from './knowledge.js';
 
 /**
  * A4 — Eval / CI / Compose / Conformance API contracts (L06).
@@ -161,7 +161,7 @@ export const AgentManifest = z.object({
     .array(z.string())
     .nullish()
     .transform((v) => v ?? []),
-  strategy: z.enum(['auto', 'single-pass', 'map-reduce']).default('auto'),
+  strategy: ReviewStrategy.default('auto'),
   // CI gate policy (see CiFailOn) — when the posted review should BLOCK
   // (REQUEST_CHANGES + fail the check) vs just comment. Default: block on critical.
   ci_fail_on: CiFailOn.default('critical'),
@@ -246,7 +246,7 @@ export type CiResultArtifact = z.infer<typeof CiResultArtifact>;
 export const ConformanceInput = z.object({
   /** Spec path/id to compare against; if omitted, the first available spec. */
   spec: z.string().nullish(),
-  provider: z.enum(['openai', 'anthropic', 'openrouter']).nullish(),
+  provider: Provider.nullish(),
   model: z.string().nullish(),
 });
 export type ConformanceInput = z.infer<typeof ConformanceInput>;

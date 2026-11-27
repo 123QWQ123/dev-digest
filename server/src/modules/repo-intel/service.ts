@@ -21,7 +21,7 @@ import type { CodeSymbol, RepoRef } from '@devdigest/shared';
 import type { Container } from '../../platform/container.js';
 
 /** The container members this code actually uses (explicit deps, not a service locator). */
-export type RepoIntelServiceDeps = Pick<Container, 'codeIndex' | 'config' | 'db' | 'git' | 'jobs' | 'depgraph' | 'tokenizer'>;
+export type RepoIntelServiceDeps = Pick<Container, 'codeIndex' | 'config' | 'git' | 'jobs' | 'depgraph' | 'tokenizer'>;
 import { extractEndpoints } from '../../adapters/codeindex/extract.js';
 import {
   parseImports,
@@ -104,8 +104,8 @@ const PHANTOM_GLOBALS_ALLOWLIST: ReadonlySet<string> = new Set([
 export class RepoIntelService implements RepoIntel {
   private readonly repo: RepoIntelRepository;
 
-  constructor(private container: RepoIntelServiceDeps) {
-    this.repo = new RepoIntelRepository(container.db);
+  constructor(private container: RepoIntelServiceDeps, repo: RepoIntelRepository) {
+    this.repo = repo;
   }
 
   // -------------------------------------------------------------------------

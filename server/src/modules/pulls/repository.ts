@@ -2,10 +2,9 @@ import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { PrDetail, PrMeta } from '@devdigest/shared';
 import type { Db } from '../../db/client.js';
 import * as t from '../../db/schema.js';
-import type { PullRow } from '../../db/rows.js';
+import type { PullRow, RepoRow } from '../../db/rows.js';
 
-export type RepoRow = typeof t.repos.$inferSelect;
-export type { PullRow };
+export type { PullRow, RepoRow };
 
 /** Newest-first `kind='review'` rows of a set of PRs (input to the list rollups). */
 export interface ReviewScoreRow {
@@ -37,13 +36,13 @@ export class PullsRepository {
     workspaceId: string,
     prId: string,
   ): Promise<{ pr: PullRow; repo: RepoRow | undefined } | undefined> {
-    const [pr] = await this.db
-      .select()
+    const [row] = await this.db
+      .select({ pr: t.pullRequests, repo: t.repos })
       .from(t.pullRequests)
+      .leftJoin(t.repos, eq(t.repos.id, t.pullRequests.repoId))
       .where(and(eq(t.pullRequests.workspaceId, workspaceId), eq(t.pullRequests.id, prId)));
-    if (!pr) return undefined;
-    const [repo] = await this.db.select().from(t.repos).where(eq(t.repos.id, pr.repoId));
-    return { pr, repo };
+    if (!row) return undefined;
+    return { pr: row.pr, repo: row.repo ?? undefined };
   }
 
   /**

@@ -171,7 +171,6 @@ export interface RepoIntel {
   getCriticalPaths(repoId: string): Promise<string[][]>;
 }
 
-// Public constants — the part of repo-intel's config other modules/adapters may
-// depend on (job kinds enqueued by repos; file scope + signature width used by
-// the astgrep / depgraph adapters). Everything else in constants.ts is internal.
-export { INDEX_JOB_KIND, REFRESH_JOB_KIND, SUPPORTED_EXT, MAX_SIGNATURE_CHARS } from './constants.js';
+// Public constants — the part of repo-intel's config other modules may depend
+// on (job kinds enqueued by repos). Everything else in constants.ts is internal.
+export { INDEX_JOB_KIND, REFRESH_JOB_KIND } from './constants.js';

@@ -1,10 +1,10 @@
 import type { Container } from '../../platform/container.js';
 
 /** The container members this code actually uses (explicit deps, not a service locator). */
-export type RepoServiceDeps = Pick<Container, 'db' | 'git' | 'jobs'>;
+export type RepoServiceDeps = Pick<Container, 'git' | 'jobs'>;
 import { type Repo } from '@devdigest/shared';
 import { AppError, NotFoundError } from '../../platform/errors.js';
-import { RepoRepository } from './repository.js';
+import type { RepoRepository } from './repository.js';
 import { parseRepoUrl, canonicalCloneUrl, isValidRepoRef, toRepoDto } from './helpers.js';
 import { CLONE_JOB_KIND, CLONE_DEPTH } from './constants.js';
 import {
@@ -32,8 +32,8 @@ export interface CloneJobPayload {
 export class RepoService {
   private repo: RepoRepository;
 
-  constructor(private container: RepoServiceDeps) {
-    this.repo = new RepoRepository(container.db);
+  constructor(private container: RepoServiceDeps, repo: RepoRepository) {
+    this.repo = repo;
   }
 
   /**

@@ -22,7 +22,7 @@ import { extname, join } from 'node:path';
 import { readContainedFile } from '../../platform/contained-read.js';
 
 import type { ExtractedReference, ExtractedSymbol } from '../codeindex/extract.js';
-import { MAX_SIGNATURE_CHARS, SUPPORTED_EXT } from '../../modules/repo-intel/types.js';
+import { MAX_SIGNATURE_CHARS, SUPPORTED_EXT } from '@devdigest/shared';
 
 // ---------------------------------------------------------------------------
 // Public types — superset of the regex extractor's row shapes.

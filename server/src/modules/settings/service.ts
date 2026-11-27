@@ -49,7 +49,8 @@ export class SettingsService {
    */
   async testConnection({ provider, key }: ConnTestRequest): Promise<ConnTestResult> {
     const p = this.deps.platform;
-    if (key && !p.secrets.set) {
+    const setSecret = p.secrets.set?.bind(p.secrets);
+    if (key && !setSecret) {
       return { provider, ok: false, message: 'Secrets backend is read-only' };
     }
     let message: string;
@@ -69,9 +70,9 @@ export class SettingsService {
       const safe = key ? raw.split(key).join('[redacted]') : raw;
       return { provider, ok: false, message: key ? `${safe} — key not saved` : safe };
     }
-    if (key) {
+    if (key && setSecret) {
       try {
-        await p.secrets.set!(SECRET_KEY_BY_PROVIDER[provider], key);
+        await setSecret(SECRET_KEY_BY_PROVIDER[provider], key);
         p.invalidateSecretCaches();
       } catch (err) {
         return { provider, ok: false, message: `Key verified but could not be saved: ${(err as Error).message}` };

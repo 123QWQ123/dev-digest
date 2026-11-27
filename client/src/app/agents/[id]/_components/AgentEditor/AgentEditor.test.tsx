@@ -48,9 +48,9 @@ describe("A2 Agent Editor (smoke)", () => {
 
   it("switching to another agent shows that agent's values (form remounts, no stale edits)", () => {
     const view = renderWithIntl(<AgentEditor agent={AGENT} tab="config" onTab={() => {}} />);
-    const name = () => screen.getByDisplayValue(/Reviewer|Auditor|edited/) as HTMLInputElement;
+    const name = () => screen.getByDisplayValue(/Reviewer|Auditor|edited/);
     fireEvent.change(name(), { target: { value: "edited name" } });
-    expect(name().value).toBe("edited name");
+    expect(name()).toHaveValue("edited name");
 
     const other: Agent = { ...AGENT, id: "ag2", name: "Perf Auditor" };
     view.rerender(
@@ -60,6 +60,6 @@ describe("A2 Agent Editor (smoke)", () => {
         </ToastProvider>
       </NextIntlClientProvider>,
     );
-    expect(name().value).toBe("Perf Auditor");
+    expect(name()).toHaveValue("Perf Auditor");
   });
 });

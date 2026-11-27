@@ -28,5 +28,10 @@
     "title": "Page not found",
     "body": "This page doesn't exist — the link may be stale.",
     "cta": "Back to the app"
+  },
+  "globalError": {
+    "title": "DevDigest hit an unexpected error",
+    "body": "Reload the app to continue.",
+    "retry": "Try again"
   }
 }

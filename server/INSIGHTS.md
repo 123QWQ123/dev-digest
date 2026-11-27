@@ -14,6 +14,8 @@
 - 2026-11-24 · Run cost: `agent_runs.cost_usd` NULL = unknown (pre-M1 run, failed/cancelled, unpriced model) vs `0` = known free model — never coalesce to 0; the UI renders NULL as "—". PR-list COST = newest DONE run per agent, summed via the pure `latestRoundCost` (rows must be newest-first) (`src/modules/pulls/status.ts:72`)
 - 2026-11-25 · Supersedes 2026-11-24 (PR-list COST): per user request COST is now the PR's **total spend** — the sum of the known `cost_usd` of every run (all agents, reruns included, no status filter or ordering needed) via pure `totalPrCost`; `latestRoundCost` is gone. NULL-vs-0 rule unchanged (`src/modules/pulls/status.ts:69`)
 - 2026-11-27 · Modules are route → `compose.ts` → service → repository; `compose.ts` (`createXService(container, log)`) is the only module file that builds the repository, because `onion-architecture`'s depcruise rule forbids routes importing repositories. Cross-module reuse goes through `<m>/index.ts` (polling uses `createPullsService`). Arch baseline is `[]` — fix, don't baseline (`src/modules/pulls/compose.ts`)
+- 2026-11-27 · Services never get `db`: the repository is a 2nd ctor arg `new XService(deps, repo)` built in `<m>/compose.ts` (or `container.agentsRepo`/`reviewRepo`). Don't fold it into an object spread of the container — `codeIndex`/`depgraph`/`tokenizer`/`repoIntel` are lazy class getters and `{...container}` drops them. Tests pass a stub repo as the 2nd arg instead of overwriting `service.repo` (`src/modules/repo-intel/compose.ts`)
+- 2026-11-27 · Values an adapter needs (e.g. `SUPPORTED_EXT`, `MAX_SIGNATURE_CHARS`) live in `vendor/shared/adapters.ts` next to the port; a module's `constants.ts` re-exports them. Re-exporting a module constant through `types.ts` only hides the adapter→module dependency from `arch:check` (`src/vendor/shared/adapters.ts:231`)
 
 ## Tool & Library Notes
 - 2026-11-24 · `pnpm db:migrate` dumps Postgres NOTICE objects (`extension "vector" already exists`, `relation "__drizzle_migrations" already exists`) that look like errors — benign; success is the final `✓ migrations applied` line (`src/db/migrate.ts:45`)
@@ -28,5 +30,6 @@
 - 2026-11-24 · M1 run cost: persisted engine `costUsd` into `agent_runs.cost_usd` (migration 0010), exposed on RunSummary / RunStats / PrMeta
 - 2026-11-27 · Onion Architecture: added `onion-architecture` skill + `.dependency-cruiser.cjs` layer rules, `pnpm arch:check` in CI; 23 pre-existing violations baselined
 - 2026-11-27 · Onion refactor: pulls/settings/workspace/polling split into service+repository (PR detail replace now one transaction — was a data-loss bug), JobStore port for JobRunner, `Pick<Container>` deps on all services, response schemas on pulls/settings, arch baseline 23 → 0
+- 2026-11-27 · pr-self-review follow-up: repos/reviews/agents/repo-intel got `compose.ts` (no `db` in service deps), adapter constants moved to shared, `POST /pulls/:id/review` response schema, single-statement settings upsert, PR+repo JOIN
 
 ## Open Questions

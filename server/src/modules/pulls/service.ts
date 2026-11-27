@@ -7,6 +7,7 @@ import {
   latestScorePerPr,
   roundSeverities,
   totalPrCost,
+  type SeverityCounts,
 } from './status.js';
 import { DIFF_STATS_BACKFILL_LIMIT } from './constants.js';
 
@@ -106,7 +107,7 @@ export class PullsService {
     const store = this.deps.repo;
     const prIds = rows.map((r) => r.id);
     let latestScore = new Map<string, { score: number | null }>();
-    let rounds = new Map<string, { reviewIds: string[]; counts: { critical: number; warning: number; suggestion: number } }>();
+    let rounds = new Map<string, { reviewIds: string[]; counts: SeverityCounts }>();
     let costByPr = new Map<string, number | null>();
     if (prIds.length > 0) {
       const [reviewRows, runRows] = await Promise.all([

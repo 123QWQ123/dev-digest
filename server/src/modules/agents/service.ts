@@ -1,7 +1,7 @@
 import type { Container } from '../../platform/container.js';
 
 /** The container members this code actually uses (explicit deps, not a service locator). */
-export type AgentsServiceDeps = Pick<Container, 'db' | 'llm'>;
+export type AgentsServiceDeps = Pick<Container, 'llm'>;
 import type {
   Agent,
   AgentSkillLink,
@@ -11,7 +11,7 @@ import type {
   Provider,
   ReviewStrategy,
 } from '@devdigest/shared';
-import { AgentsRepository } from './repository.js';
+import type { AgentsRepository } from './repository.js';
 import { toAgentDto, toAgentVersionDto } from './helpers.js';
 
 /**
@@ -54,8 +54,8 @@ export interface UpdateAgentInput {
 export class AgentsService {
   private repo: AgentsRepository;
 
-  constructor(private container: AgentsServiceDeps) {
-    this.repo = new AgentsRepository(container.db);
+  constructor(private container: AgentsServiceDeps, repo: AgentsRepository) {
+    this.repo = repo;
   }
 
   async list(workspaceId: string): Promise<Agent[]> {

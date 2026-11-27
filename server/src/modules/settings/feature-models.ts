@@ -3,8 +3,7 @@ import {
   FeatureModelChoice,
   type FeatureModelId,
 } from '@devdigest/shared';
-import type { Container } from '../../platform/container.js';
-import { SettingsRepository } from './repository.js';
+import type { SettingsRepository } from './repository.js';
 import { rowsToSettings } from './helpers.js';
 
 /**
@@ -33,11 +32,11 @@ export function defaultFeatureModel(id: FeatureModelId): FeatureModelChoice {
  * `resolveFeatureModel` instead.
  */
 export async function getFeatureModelOverride(
-  container: Pick<Container, 'db'>,
+  settings: Pick<SettingsRepository, 'list'>,
   workspaceId: string,
   id: FeatureModelId,
 ): Promise<FeatureModelChoice | undefined> {
-  const rows = await new SettingsRepository(container.db).list(workspaceId);
+  const rows = await settings.list(workspaceId);
   const fm = (rowsToSettings(rows) as { feature_models?: Record<string, unknown> }).feature_models;
   const parsed = FeatureModelChoice.safeParse(fm?.[id]);
   return parsed.success ? parsed.data : undefined;
@@ -45,9 +44,9 @@ export async function getFeatureModelOverride(
 
 /** Resolve `id` to a concrete provider+model: workspace override, else registry default. */
 export async function resolveFeatureModel(
-  container: Pick<Container, 'db'>,
+  settings: Pick<SettingsRepository, 'list'>,
   workspaceId: string,
   id: FeatureModelId,
 ): Promise<FeatureModelChoice> {
-  return (await getFeatureModelOverride(container, workspaceId, id)) ?? DEFAULTS[id];
+  return (await getFeatureModelOverride(settings, workspaceId, id)) ?? DEFAULTS[id];
 }

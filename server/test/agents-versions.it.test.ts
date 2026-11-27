@@ -164,7 +164,7 @@ d('GET /agents/:id/versions', () => {
       systemPrompt: 'x',
     });
 
-    const service = new AgentsService({ db } as unknown as Container);
+    const service = new AgentsService({} as unknown as Container, new AgentsRepository(db));
     const [defaultRow] = await db
       .select({ id: t.workspaces.id })
       .from(t.workspaces)

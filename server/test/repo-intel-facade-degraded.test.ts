@@ -22,22 +22,20 @@ function buildDegradedService(opts: {
 }): RepoIntelService {
   const container = {
     config: { repoIntelEnabled: opts.flag },
-    db: {} as never,
     // codeIndex is reached by getBlastRadius; we stub minimal behaviour.
     codeIndex: {
       symbols: async () => [],
       references: async () => [],
     } as never,
   } as never;
-  const svc = new RepoIntelService(container);
-  (svc as unknown as { repo: Record<string, unknown> }).repo = {
+  const repo = {
     getRepoBasics: async () => opts.basics ?? null,
     tryGetIndexState: async () => opts.indexStateRow ?? null,
     getCachedSymbols: async () => [],
     getCachedSymbolsForFiles: async () => [],
     getCachedReferencesTo: async () => [],
-  };
-  return svc;
+  } as never;
+  return new RepoIntelService(container, repo);
 }
 
 describe('RepoIntel facade — degraded contract (flag off)', () => {
