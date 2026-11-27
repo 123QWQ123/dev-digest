@@ -1,10 +1,11 @@
 /** Constants for the skills module (pure — no I/O imports). */
+import { SKILL_IMPORT_MAX_BYTES } from '@devdigest/shared';
 
 /** Version recorded for a newly-created skill. */
 export const INITIAL_SKILL_VERSION = 1;
 
 /** Import limits: compressed upload, total uncompressed bytes, archive entry count. */
-export const IMPORT_MAX_UPLOAD_BYTES = 1_048_576;
+export const IMPORT_MAX_UPLOAD_BYTES = SKILL_IMPORT_MAX_BYTES;
 export const IMPORT_MAX_UNCOMPRESSED_BYTES = 5 * 1_048_576;
 export const IMPORT_MAX_ENTRIES = 200;
 

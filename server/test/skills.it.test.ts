@@ -155,6 +155,14 @@ d('M2 skills (Testcontainers pg)', () => {
     });
     expect(bad.statusCode).toBe(422);
 
+    // Not base64 at all: rejected by the contract, never decoded into garbage bytes.
+    const notB64 = await app.inject({
+      method: 'POST',
+      url: '/skills/import/preview',
+      payload: { filename: 'x.md', content_base64: '%%% not base64 %%%' },
+    });
+    expect(notB64.statusCode).toBe(422);
+
     const saved = await app.inject({
       method: 'POST',
       url: '/skills',

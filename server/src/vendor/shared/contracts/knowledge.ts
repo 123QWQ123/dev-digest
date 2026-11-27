@@ -202,19 +202,25 @@ export type UpdateSkillInput = z.infer<typeof UpdateSkillInput>;
 export const SkillVersion = z.object({
   skill_id: z.string(),
   version: z.number().int(),
-  name: z.string().nullable(),
-  description: z.string().nullable(),
-  type: SkillType.nullable(),
+  name: z.string(),
+  description: z.string(),
+  type: SkillType,
   body: z.string(),
   note: z.string().nullable(),
   created_at: z.string(),
 });
 export type SkillVersion = z.infer<typeof SkillVersion>;
 
+/** Largest accepted import file (bytes) and its base64 length. */
+export const SKILL_IMPORT_MAX_BYTES = 1_048_576;
+export const SKILL_IMPORT_MAX_BASE64_CHARS = Math.ceil(SKILL_IMPORT_MAX_BYTES / 3) * 4;
+
 /** `POST /skills/import/preview` request: the raw file, base64-encoded. */
 export const SkillImportRequest = z.object({
   filename: z.string().min(1).max(255),
-  content_base64: z.string().min(1),
+  // .base64() rejects non-base64 text (Buffer.from would silently drop it);
+  // .max() states the 1 MB upload limit in the contract, not only the bodyLimit.
+  content_base64: z.string().min(1).max(SKILL_IMPORT_MAX_BASE64_CHARS).base64(),
 });
 export type SkillImportRequest = z.infer<typeof SkillImportRequest>;
 

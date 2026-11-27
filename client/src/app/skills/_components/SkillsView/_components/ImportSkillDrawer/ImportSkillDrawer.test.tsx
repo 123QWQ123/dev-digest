@@ -24,6 +24,15 @@ const createMutate = vi.fn();
 
 // PromptEditor counts tokens via the API — stub it (no QueryClient in these tests).
 vi.mock("@/lib/hooks/tokens", () => ({ useTokenCount: () => ({ data: { tokens: 42 } }) }));
+// The real FileReader path by default; one test makes it fail.
+const readFile = vi.hoisted(() => ({ fail: false }));
+vi.mock("../../helpers", async (orig) => {
+  const mod = await orig<typeof import("../../helpers")>();
+  return {
+    ...mod,
+    fileToBase64: (f: File) => (readFile.fail ? Promise.reject(new Error("read failed")) : mod.fileToBase64(f)),
+  };
+});
 vi.mock("@/lib/hooks/skills", () => ({
   useImportSkillPreview: () => ({ mutate: previewMutate, isPending: false }),
   useCreateSkill: () => ({ mutate: createMutate, isPending: false }),
@@ -33,6 +42,7 @@ import { ImportSkillDrawer } from "./ImportSkillDrawer";
 
 afterEach(() => {
   cleanup();
+  readFile.fail = false;
   previewMutate.mockClear();
   createMutate.mockClear();
 });
@@ -80,6 +90,15 @@ describe("ImportSkillDrawer", () => {
     const big = new File([new Uint8Array(1_048_577)], "big.zip");
     await user.upload(screen.getByLabelText("Choose a .md or .zip file"), big);
     expect(screen.getByText("The file is larger than 1 MB.")).toBeInTheDocument();
+    expect(previewMutate).not.toHaveBeenCalled();
+  });
+
+  it("shows an error instead of an unhandled rejection when the file cannot be read", async () => {
+    readFile.fail = true;
+    const user = userEvent.setup();
+    renderDrawer();
+    await user.upload(screen.getByLabelText("Choose a .md or .zip file"), new File(["x"], "s.md"));
+    expect(await screen.findByText("Could not read this file. Pick it again.")).toBeInTheDocument();
     expect(previewMutate).not.toHaveBeenCalled();
   });
 });

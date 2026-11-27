@@ -275,18 +275,23 @@ async function seedTestQualitySkills(db: Db, workspaceId: string): Promise<void>
       .from(t.skills)
       .where(and(eq(t.skills.workspaceId, workspaceId), eq(t.skills.name, s.name)));
     if (!row) {
-      [row] = await db
-        .insert(t.skills)
-        .values({ workspaceId, ...s, source: 'manual', enabled: true, version: 1 })
-        .returning({ id: t.skills.id });
-      await db.insert(t.skillVersions).values({
-        skillId: row!.id,
-        version: 1,
-        name: s.name,
-        description: s.description,
-        type: s.type,
-        body: s.body,
-        note: 'Initial version',
+      // Skill + its v1 snapshot in one transaction: a skill without a version
+      // would never be repaired, since re-seeding matches by name and skips it.
+      row = await db.transaction(async (tx) => {
+        const [created] = await tx
+          .insert(t.skills)
+          .values({ workspaceId, ...s, source: 'manual', enabled: true, version: 1 })
+          .returning({ id: t.skills.id });
+        await tx.insert(t.skillVersions).values({
+          skillId: created!.id,
+          version: 1,
+          name: s.name,
+          description: s.description,
+          type: s.type,
+          body: s.body,
+          note: 'Initial version',
+        });
+        return created;
       });
     }
     skillIds.push(row!.id);

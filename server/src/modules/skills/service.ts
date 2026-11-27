@@ -114,9 +114,9 @@ export class SkillsService {
     if (!snap) return undefined;
     const content = {
       body: snap.body,
-      ...(snap.name ? { name: snap.name } : {}),
-      ...(snap.description ? { description: snap.description } : {}),
-      ...(snap.type ? { type: snap.type } : {}),
+      name: snap.name,
+      description: snap.description,
+      type: snap.type,
     };
     if (!isContentChange(existing, content)) return toSkillDto(existing);
     const row = await this.guardDuplicate(() =>

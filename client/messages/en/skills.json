@@ -115,7 +115,8 @@
     "saving": "Saving…",
     "cancel": "Cancel",
     "savedToast": "Imported \"{name}\"",
-    "previewTitle": "Review before saving"
+    "previewTitle": "Review before saving",
+    "readError": "Could not read this file. Pick it again."
   },
   "stats": {
     "loadError": "Could not load skill stats.",

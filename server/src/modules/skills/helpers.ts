@@ -37,7 +37,7 @@ export function toSkillVersionDto(row: SkillVersionRow): SkillVersion {
     version: row.version,
     name: row.name,
     description: row.description,
-    type: (row.type as SkillType | null) ?? null,
+    type: row.type,
     body: row.body,
     note: row.note,
     created_at: row.createdAt.toISOString(),

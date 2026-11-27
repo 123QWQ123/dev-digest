@@ -1,13 +1,17 @@
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import messages from "../../../messages/en/common.json";
 
-let tokens = 412;
+let tokens: number;
 vi.mock("@/lib/hooks/tokens", () => ({ useTokenCount: () => ({ data: { tokens } }) }));
 
 import { PromptEditor } from "./PromptEditor";
 
+// Reset the mocked count per test so no test depends on another one running first.
+beforeEach(() => {
+  tokens = 412;
+});
 afterEach(cleanup);
 
 const renderEditor = (props: Partial<React.ComponentProps<typeof PromptEditor>> = {}) =>

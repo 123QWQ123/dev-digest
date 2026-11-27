@@ -47,11 +47,11 @@ export const skillVersions = pgTable(
       .references(() => skills.id, { onDelete: 'cascade' }),
     version: integer('version').notNull(),
     // Full snapshot (M2): restore and traces reproduce exactly what ran.
-    name: text('name'),
-    description: text('description'),
+    name: text('name').notNull(),
+    description: text('description').notNull(),
     type: text('type', {
       enum: ['rubric', 'convention', 'security', 'custom'],
-    }),
+    }).notNull(),
     body: text('body').notNull(),
     /** Optional change note shown in the Versions tab. */
     note: text('note'),

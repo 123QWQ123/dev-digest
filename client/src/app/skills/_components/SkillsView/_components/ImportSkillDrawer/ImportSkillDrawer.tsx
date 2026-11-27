@@ -41,7 +41,14 @@ export function ImportSkillDrawer({
       setLocalError(t("import.tooLarge"));
       return;
     }
-    const contentBase64 = await fileToBase64(file);
+    let contentBase64: string;
+    try {
+      contentBase64 = await fileToBase64(file);
+    } catch {
+      // FileReader failure (unreadable/removed file) — show it instead of an unhandled rejection.
+      setLocalError(t("import.readError"));
+      return;
+    }
     preview.mutate({ filename: file.name, contentBase64 }, { onSuccess: setData });
   };
 
