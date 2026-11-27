@@ -51,3 +51,6 @@ Node ≥22 · TypeScript · Zod 3 · Postgres 16 + pgvector (the only thing in D
 - END: invoke the `engineering-insights` skill. Write ONLY if there is something substantive AND it is not
   already recorded (check the file first). Nothing substantive or already there → write nothing.
   But if something substantive was learned, recording it is not optional.
+- BEFORE PR / push: run the `pr-self-review` skill (`/pr-self-review`). A hook blocks `gh pr create` and
+  `git push` until its verdict is PASS for exactly the pushed content. Never bypass it
+  (`PR_SELF_REVIEW_SKIP=1`, `--no-verify`) unless the user explicitly asks.

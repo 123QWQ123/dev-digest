@@ -1,0 +1,88 @@
+{
+  "$comment": "Canonical routing for pr-self-review. Rules are ADDITIVE: a file gets every skill whose rule matches (glob matches and no `unless` glob matches). Explained in references/skill-routing.md.",
+  "exclude": [
+    "**/node_modules/**",
+    "**/pnpm-lock.yaml",
+    "**/package-lock.json",
+    "skills-lock.json",
+    "server/src/db/migrations/meta/**",
+    "**/*.{png,jpg,jpeg,gif,webp,ico,svg,woff,woff2,ttf,pdf,zip}",
+    "**/*.md",
+    "**/test-results/**"
+  ],
+  "excludeExceptions": ["docs/agent-prompts/**"],
+  "notReviewSkills": ["engineering-insights", "mermaid-diagram", "pr-self-review"],
+  "rules": [
+    {
+      "glob": ["server/src/**/*.ts"],
+      "unless": ["server/src/vendor/shared/**"],
+      "skills": ["onion-architecture", "typescript-expert", "security"]
+    },
+    {
+      "glob": ["server/src/modules/**/routes.ts", "server/src/modules/**/routes/**/*.ts", "server/src/app.ts", "server/src/server.ts", "server/src/platform/**/*.ts"],
+      "skills": ["fastify-best-practices"]
+    },
+    {
+      "glob": ["server/src/db/**/*.ts", "server/src/**/repository.ts", "server/src/**/repository/**/*.ts", "server/src/**/*.repo.ts"],
+      "skills": ["drizzle-orm-patterns"]
+    },
+    {
+      "glob": ["server/src/db/schema.ts", "server/src/db/schema/**/*.ts", "server/src/db/migrations/*.sql"],
+      "skills": ["postgresql-table-design"]
+    },
+    {
+      "glob": ["server/test/**/*.ts"],
+      "skills": ["typescript-expert"]
+    },
+    {
+      "glob": ["client/src/**/*.{ts,tsx}"],
+      "unless": ["client/src/**/*.test.{ts,tsx}", "client/src/test/**", "client/src/vendor/shared/**"],
+      "skills": ["frontend-architecture", "security"]
+    },
+    {
+      "glob": ["client/src/**/*.tsx", "client/src/lib/hooks/**/*.ts"],
+      "unless": ["client/src/**/*.test.{ts,tsx}", "client/src/test/**"],
+      "skills": ["react-best-practices"]
+    },
+    {
+      "glob": ["client/src/app/**/*.{ts,tsx}", "client/next.config.*", "client/src/middleware.ts"],
+      "unless": ["client/src/**/*.test.{ts,tsx}"],
+      "skills": ["next-best-practices"]
+    },
+    {
+      "glob": ["client/src/**/*.test.{ts,tsx}", "client/src/test/**/*.{ts,tsx}"],
+      "skills": ["react-testing-library"]
+    },
+    {
+      "glob": ["server/src/vendor/shared/**/*.ts", "client/src/vendor/shared/**/*.ts"],
+      "skills": ["zod", "typescript-expert"]
+    },
+    {
+      "glob": ["reviewer-core/src/**/*.ts"],
+      "skills": ["typescript-expert", "security"]
+    },
+    {
+      "glob": ["reviewer-core/test/**/*.ts", "e2e/**/*.ts"],
+      "skills": ["typescript-expert"]
+    }
+  ],
+  "contentRules": [
+    {
+      "glob": ["**/*.{ts,tsx}"],
+      "pattern": "from\\s+['\"]zod['\"]",
+      "skills": ["zod"]
+    }
+  ],
+  "quickSkills": ["onion-architecture", "frontend-architecture", "security", "react-best-practices"],
+  "packages": {
+    "server": { "prefix": "server/", "checks": ["pnpm arch:check", "pnpm typecheck"] },
+    "client": { "prefix": "client/", "checks": ["pnpm arch:check", "pnpm lint", "pnpm typecheck"] },
+    "reviewer-core": { "prefix": "reviewer-core/", "checks": ["npm run typecheck"], "alsoAffects": ["server"] },
+    "e2e": { "prefix": "e2e/", "checks": ["npm run typecheck"] }
+  },
+  "sharedParity": {
+    "glob": ["server/src/vendor/shared/**", "client/src/vendor/shared/**"],
+    "check": "./scripts/check-shared.sh"
+  },
+  "largeDiffLines": 800
+}
