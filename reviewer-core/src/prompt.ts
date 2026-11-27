@@ -78,6 +78,15 @@ export interface AssembledPrompt {
 }
 
 /**
+ * Render one linked skill as a prompt block: `### <name>` + its markdown body.
+ * The server passes the formatted blocks as `PromptParts.skills`, in link order,
+ * so each skill is attributable by name in the assembled prompt and the trace.
+ */
+export function formatSkill(name: string, body: string): string {
+  return `### ${name.trim()}\n\n${body.trim()}`;
+}
+
+/**
  * Assemble the messages array + the PromptAssembly record for the run trace.
  * Untrusted blocks (specs, diff) are delimiter-wrapped; the injection guard is
  * appended to the system message.

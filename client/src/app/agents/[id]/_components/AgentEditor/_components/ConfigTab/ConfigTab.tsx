@@ -2,12 +2,19 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
-import { FormField, TextInput, SelectInput, SearchableSelect, Textarea, Toggle, Button } from "@devdigest/ui";
+import { FormField, TextInput, SelectInput, SearchableSelect, Toggle, Button } from "@devdigest/ui";
 import type { Agent, CiFailOn, Provider, ReviewStrategy } from "@devdigest/shared";
 import { useUpdateAgent, useProviderModels } from "@/lib/hooks/agents";
 import { useToast } from "@/lib/toast";
 import { toModelOptions } from "@/lib/model-label";
-import { CI_FAIL_ON_VALUES, OUTPUT_SCHEMA_VALUE, PROVIDER_OPTIONS, STRATEGY_VALUES } from "./constants";
+import { PromptEditor } from "@/components/prompt-editor";
+import {
+  CI_FAIL_ON_VALUES,
+  OUTPUT_SCHEMA_VALUE,
+  PROVIDER_OPTIONS,
+  STRATEGY_VALUES,
+  SYSTEM_PROMPT_TOKEN_BUDGET,
+} from "./constants";
 import { s } from "./styles";
 
 /**
@@ -120,7 +127,15 @@ export function ConfigTab({ agent }: { agent: Agent }) {
         </label>
       </FormField>
       <FormField label={t("config.systemPrompt")} hint={t("config.systemPromptHint")}>
-        <Textarea value={systemPrompt} onChange={setSystemPrompt} rows={8} mono />
+        <PromptEditor
+          value={systemPrompt}
+          onChange={setSystemPrompt}
+          fileName="system-prompt.md"
+          dirty={systemPrompt !== agent.system_prompt}
+          tokenBudget={SYSTEM_PROMPT_TOKEN_BUDGET}
+          rows={12}
+          ariaLabel={t("config.systemPrompt")}
+        />
       </FormField>
       <FormField label={t("config.outputSchema")}>
         <SelectInput value={OUTPUT_SCHEMA_VALUE} options={[OUTPUT_SCHEMA_VALUE]} />

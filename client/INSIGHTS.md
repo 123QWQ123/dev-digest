@@ -32,6 +32,7 @@
 - 2026-11-27 · Switching a component import from the `@/lib/hooks` barrel to `@/lib/hooks/core` broke its test with `No QueryClient set` — `vi.mock` matches the exact specifier, so the barrel mock no longer applied. Change the test's `vi.mock(...)` path together with the import (`src/app/settings/[section]/_components/SettingsView/_components/SettingsApiKeys/SettingsApiKeys.test.tsx:10`)
 
 - 2026-11-25 · React warning "Updating a style property during rerender (borderColor) when a conflicting property is set (borderLeftColor)" — `borderColor` and `borderWidth` are shorthands too (all 4 sides), not just `border`. Fix: per-side longhands (`borderTopColor`… `borderLeftColor`) whenever one side differs and a value toggles on rerender (`src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/styles.ts:5`)
+- 2026-11-27 · `import { SomeValue } from "@devdigest/shared"` passes `tsc` and vitest but breaks the Next page at runtime with `Module not found: Can't resolve './contracts/findings.js'` (webpack can't map the barrel's `.js` re-exports to `.ts`). Client code may only `import type` from shared — mirror values locally (zod schemas, limits) like `lib/feature-models.ts`. Once hit, a running `next dev` keeps the failed resolve cached (touching files doesn't help) — restart it (`src/app/skills/_components/SkillsView/constants.ts:24`)
 
 ## Session Notes
 - 2026-11-24 · M1 run cost badge: shared `RunCostBadge`/`formatCost` in `src/components/run-cost/` used by the PR list, run timeline, and trace drawer
@@ -39,5 +40,6 @@
 - 2026-11-25 · PR list FINDINGS column: counts from `PrMeta.latest_review`, findings lazy-fetched on hover, deep link `?tab=findings&run=&finding=` read by FindingsTab `initialTarget` (`specs/m1-timeline-severity-popover.md`)
 - 2026-11-25 · Supersedes the FINDINGS-column note above: counts are the **latest round** (`PrMeta.latest_round`, newest review of EVERY agent, older reruns dropped), not the single latest review; each finding deep-links into its own run (`src/app/repos/[repoId]/pulls/_components/PrFindingsCell/PrFindingsCell.tsx`)
 - 2026-11-25 · Timeline got a SUGGESTION counter (💡 N) — `SeverityCountPopover` now takes `CountedSeverity` with a per-severity `labelKey`
+- 2026-11-27 · M2 Skills: `/skills` page (Config/Preview/Versions, import drawer) + agent editor Skills tab (optimistic `useSetAgentSkills`, native drag + ↑/↓); trace shows `skills_used` + per-slot `prompt_tokens` (`specs/m2-skills.md`)
 
 ## Open Questions

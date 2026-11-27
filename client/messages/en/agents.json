@@ -1,7 +1,11 @@
 {
   "card": {
     "noDescription": "No description",
-    "skillCount": "{count} skills"
+    "skillCount": "{count, plural, one {# skill} other {# skills}}",
+    "runs": "{count, plural, one {# run} other {# runs}}",
+    "accept": "{value} accept",
+    "avgCost": "{value} avg",
+    "statsHint": "Last 30 days of completed runs"
   },
   "list": {
     "breadcrumbLab": "Skills Lab",
@@ -62,7 +66,7 @@
     "modelEmptyHint": "No models loaded — set the {provider} API key in Settings → API Keys.",
     "modelSearch": "Search models…",
     "systemPrompt": "System prompt",
-    "systemPromptHint": "Loaded as the static system message. Enabled skills are appended below it.",
+    "systemPromptHint": "Loaded as the static system message. Enabled skills are added, in order, in the prompt's \"Skills / rules\" block.",
     "outputSchema": "Output schema",
     "outputSchemaOption": "Standard findings JSON",
     "strategy": "Review strategy",
@@ -91,9 +95,32 @@
     "title": "Skills",
     "enabledCount": "{linked} of {total} enabled",
     "filterPlaceholder": "Filter skills…",
-    "orderHint": "Order matters — earlier skills appear earlier in the assembled prompt. Toggle to attach."
+    "orderHint": "Order matters — earlier skills appear earlier in the assembled prompt. Drag or use the arrows to reorder; tick to attach.",
+    "empty": "No skills in this workspace yet.",
+    "createSkill": "Create a skill",
+    "noMatch": "No skills match the filter.",
+    "moveUp": "Move {name} up",
+    "moveDown": "Move {name} down",
+    "dragHandle": "Drag to reorder {name}",
+    "globallyDisabled": "disabled globally",
+    "loadError": "Could not load this agent's skills."
   },
   "mount": {
     "body": "Mount point for {owner}. The Agent Editor shell + tab routing are wired by A2 — {owner} renders this tab."
+  },
+  "stats": {
+    "loadError": "Could not load agent stats.",
+    "runs": "Runs (30d)",
+    "runsHint": "Completed reviews in the last 30 days",
+    "acceptRate": "Accept rate",
+    "acceptHint": "{accepted} accepted · {dismissed} dismissed · {pending} pending",
+    "avgCost": "Avg cost",
+    "totalCost": "Total: {cost}",
+    "avgLatency": "Avg latency",
+    "bySeverity": "Findings by severity ({total})",
+    "perRun": "{value} findings per run",
+    "scoreTrend": "Review score — last {count} runs",
+    "noTrend": "Run the agent at least twice to see a trend.",
+    "footnote": "Last 30 days, completed runs only (failed and cancelled runs are excluded). Accept rate counts triaged findings only."
   }
 }

@@ -157,6 +157,15 @@ export function useFindingAction() {
       ),
     onSuccess: (_d, { prId }) => {
       if (prId) qc.invalidateQueries({ queryKey: queryKeys.reviews(prId) });
+      // Accept/dismiss moves the accept rate on agent + skill cards and Stats tabs.
+      for (const key of [
+        queryKeys.agents(),
+        queryKeys.skills(),
+        queryKeys.agentStatsAll(),
+        queryKeys.skillStatsAll(),
+      ]) {
+        qc.invalidateQueries({ queryKey: key });
+      }
     },
   });
 }

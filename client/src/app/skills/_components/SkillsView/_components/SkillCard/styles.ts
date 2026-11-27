@@ -1,0 +1,60 @@
+import type { CSSProperties } from "react";
+
+/** Co-located styles for SkillCard (kept in line with AgentCard). */
+export const s = {
+  card: (active: boolean, enabled: boolean): CSSProperties => ({
+    padding: 14,
+    borderRadius: 8,
+    cursor: "pointer",
+    border: "1px solid " + (active ? "var(--border-strong)" : "var(--border)"),
+    background: active ? "var(--bg-hover)" : "var(--bg-elevated)",
+    opacity: enabled ? 1 : 0.6,
+    marginBottom: 10,
+  }),
+  headerRow: { display: "flex", alignItems: "center", gap: 10 } satisfies CSSProperties,
+  iconBox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    background: "var(--accent-bg)",
+    color: "var(--accent)",
+    display: "grid",
+    placeItems: "center",
+    flexShrink: 0,
+  } satisfies CSSProperties,
+  name: {
+    fontSize: 13,
+    fontWeight: 600,
+    flex: 1,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  } satisfies CSSProperties,
+  description: {
+    fontSize: 12,
+    color: "var(--text-muted)",
+    margin: "8px 0",
+    lineHeight: 1.4,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  } satisfies CSSProperties,
+  metaRow: { display: "flex", alignItems: "center", gap: 8 } satisfies CSSProperties,
+  meta: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 4,
+    fontSize: 12,
+    color: "var(--text-secondary)",
+  } satisfies CSSProperties,
+  accept: { color: "var(--ok)" } satisfies CSSProperties,
+  footer: {
+    marginTop: 10,
+    paddingTop: 8,
+    borderTop: "1px solid var(--border)",
+    fontSize: 12,
+    color: "var(--text-muted)",
+    display: "flex",
+    gap: 12,
+  } satisfies CSSProperties,
+} as const;

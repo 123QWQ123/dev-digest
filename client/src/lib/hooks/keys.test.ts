@@ -16,6 +16,15 @@ describe("queryKeys", () => {
     expect(queryKeys.prRuns("p1")).toEqual(["pr-runs", "p1"]);
     expect(queryKeys.reviews("p1")).toEqual(["reviews", "p1"]);
     expect(queryKeys.runTrace("run1")).toEqual(["run-trace", "run1"]);
+    expect(queryKeys.skills()).toEqual(["skills"]);
+    expect(queryKeys.skill("s1")).toEqual(["skill", "s1"]);
+    expect(queryKeys.skillVersions("s1")).toEqual(["skill-versions", "s1"]);
+    expect(queryKeys.agentSkills("a1")).toEqual(["agent-skills", "a1"]);
+  });
+
+  it("the all-agent-skills prefix matches every agent's link set", () => {
+    const prefix = queryKeys.agentSkillsAll();
+    expect(queryKeys.agentSkills("a1").slice(0, prefix.length)).toEqual([...prefix]);
   });
 
   it("the all-providers prefix matches every provider's key", () => {

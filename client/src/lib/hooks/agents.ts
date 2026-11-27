@@ -3,7 +3,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
-import type { Agent, ModelInfo, Provider, ReviewStrategy } from "@devdigest/shared";
+import type { Agent, AgentStats, ModelInfo, Provider, ReviewStrategy } from "@devdigest/shared";
 import { queryKeys } from "./keys";
 
 export function useAgents() {
@@ -17,6 +17,15 @@ export function useAgent(id: string | null | undefined) {
   return useQuery({
     queryKey: queryKeys.agent(id),
     queryFn: () => api.get<Agent>(`/agents/${id}`),
+    enabled: !!id,
+  });
+}
+
+/** Stats tab: 30-day run/finding aggregates + score trend. */
+export function useAgentStats(id: string | null | undefined) {
+  return useQuery({
+    queryKey: queryKeys.agentStats(id),
+    queryFn: () => api.get<AgentStats>(`/agents/${id}/stats`),
     enabled: !!id,
   });
 }

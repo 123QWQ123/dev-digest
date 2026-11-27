@@ -180,6 +180,11 @@ export class ReviewRepository {
     return runRepo.saveRunTrace(this.db, runId, trace);
   }
 
+  /** Record which skill versions a run used (M2 skill stats). */
+  recordRunSkills(runId: string, used: { skillId: string; version: number }[]): Promise<void> {
+    return runRepo.recordRunSkills(this.db, runId, used);
+  }
+
   getRunTrace(runId: string): Promise<RunTrace | undefined> {
     return runRepo.getRunTrace(this.db, runId);
   }

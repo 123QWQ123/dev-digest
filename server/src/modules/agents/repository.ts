@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { Db } from '../../db/client.js';
 import * as t from '../../db/schema.js';
 import type { CiFailOn, Provider, ReviewStrategy } from '@devdigest/shared';
@@ -42,10 +42,34 @@ export interface UpdateAgent {
   enabled?: boolean;
 }
 
-/** A skill linked to an agent (with its order), joined from agent_skills. */
+/** A skill linked to an agent (with its order + per-agent switch), joined from agent_skills. */
 export interface LinkedSkillRow {
   skill: typeof t.skills.$inferSelect;
   order: number;
+  enabled: boolean;
+}
+
+/** One entry of the ordered link set written by `setSkills`. */
+export interface SkillLinkInput {
+  skillId: string;
+  enabled: boolean;
+}
+
+export interface AgentRunAggregate {
+  agentId: string;
+  runs: number;
+  failed: number;
+  avgCostUsd: number | null;
+  totalCostUsd: number | null;
+  avgDurationMs: number | null;
+}
+
+export interface AgentFindingAggregate {
+  agentId: string;
+  severity: string;
+  findings: number;
+  accepted: number;
+  dismissed: number;
 }
 
 export class AgentsRepository {
@@ -188,15 +212,23 @@ export class AgentsRepository {
 
   // ---- agent_skills link table (A2 owns the agent side) -------------------
 
-  /** Skills linked to an agent, in `order` ascending. */
+  /** Skills linked to an agent, in `order` ascending (any link state). */
   async linkedSkills(agentId: string): Promise<LinkedSkillRow[]> {
     const rows = await this.db
-      .select({ skill: t.skills, order: t.agentSkills.order })
+      .select({ skill: t.skills, order: t.agentSkills.order, enabled: t.agentSkills.enabled })
       .from(t.agentSkills)
       .innerJoin(t.skills, eq(t.agentSkills.skillId, t.skills.id))
       .where(eq(t.agentSkills.agentId, agentId))
       .orderBy(asc(t.agentSkills.order));
-    return rows.map((r) => ({ skill: r.skill, order: r.order }));
+    return rows;
+  }
+
+  /**
+   * The skills that reach this agent's prompt: link enabled AND skill enabled,
+   * in link order. The review executor renders exactly these.
+   */
+  async effectiveSkills(agentId: string): Promise<LinkedSkillRow[]> {
+    return (await this.linkedSkills(agentId)).filter((l) => l.enabled && l.skill.enabled);
   }
 
   async skillIdsForAgent(agentId: string): Promise<string[]> {
@@ -204,33 +236,132 @@ export class AgentsRepository {
     return links.map((l) => l.skill.id);
   }
 
-  /** Link a skill to an agent at a given order (idempotent: upserts order). */
-  async linkSkill(agentId: string, skillId: string, order: number): Promise<void> {
-    await this.db
-      .insert(t.agentSkills)
-      .values({ agentId, skillId, order })
-      .onConflictDoUpdate({
-        target: [t.agentSkills.agentId, t.agentSkills.skillId],
-        set: { order },
-      });
+  /** Effective skill count per agent in the workspace (for the agent cards). */
+  async effectiveSkillCounts(workspaceId: string): Promise<Map<string, number>> {
+    const rows = await this.db
+      .select({ agentId: t.agentSkills.agentId, n: count() })
+      .from(t.agentSkills)
+      .innerJoin(t.skills, eq(t.agentSkills.skillId, t.skills.id))
+      .where(
+        and(
+          eq(t.skills.workspaceId, workspaceId),
+          eq(t.skills.enabled, true),
+          eq(t.agentSkills.enabled, true),
+        ),
+      )
+      .groupBy(t.agentSkills.agentId);
+    return new Map(rows.map((r) => [r.agentId, Number(r.n)]));
   }
 
-  async unlinkSkill(agentId: string, skillId: string): Promise<void> {
-    await this.db
-      .delete(t.agentSkills)
-      .where(and(eq(t.agentSkills.agentId, agentId), eq(t.agentSkills.skillId, skillId)));
+  /** How many of `skillIds` belong to the workspace (guards cross-tenant links). */
+  async countWorkspaceSkills(workspaceId: string, skillIds: string[]): Promise<number> {
+    if (skillIds.length === 0) return 0;
+    const [row] = await this.db
+      .select({ n: count() })
+      .from(t.skills)
+      .where(and(eq(t.skills.workspaceId, workspaceId), inArray(t.skills.id, skillIds)));
+    return Number(row?.n ?? 0);
   }
 
   /**
-   * Replace the full set of linked skills for an agent with `skillIds`, assigning
-   * order = index. Used by the "Skills" editor tab (attach/reorder). Skills not in
-   * the list are unlinked.
+   * Replace the full ordered link set of an agent, atomically (order = index).
+   * Skills not in the list are unlinked. Used by the editor's Skills tab.
    */
-  async setSkills(agentId: string, skillIds: string[]): Promise<void> {
-    await this.db.delete(t.agentSkills).where(eq(t.agentSkills.agentId, agentId));
-    if (skillIds.length === 0) return;
-    await this.db
-      .insert(t.agentSkills)
-      .values(skillIds.map((skillId, i) => ({ agentId, skillId, order: i })));
+  async setSkills(agentId: string, links: SkillLinkInput[]): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx.delete(t.agentSkills).where(eq(t.agentSkills.agentId, agentId));
+      if (links.length === 0) return;
+      await tx.insert(t.agentSkills).values(
+        links.map((l, i) => ({ agentId, skillId: l.skillId, order: i, enabled: l.enabled })),
+      );
+    });
+  }
+
+  // ---- usage stats ---------------------------------------------------------
+
+  /** Run aggregates per agent over the window (done runs; failed counted apart). */
+  async runAggregates(workspaceId: string, windowDays: number, agentId?: string): Promise<AgentRunAggregate[]> {
+    const rows = await this.db.execute<{
+      agent_id: string;
+      runs: number;
+      failed: number;
+      avg_cost: number | null;
+      total_cost: number | null;
+      avg_duration: number | null;
+    }>(sql`
+      SELECT r.agent_id,
+             count(*) FILTER (WHERE r.status = 'done')::int AS runs,
+             count(*) FILTER (WHERE r.status = 'failed')::int AS failed,
+             avg(r.cost_usd) FILTER (WHERE r.status = 'done')::float8 AS avg_cost,
+             sum(r.cost_usd) FILTER (WHERE r.status = 'done')::float8 AS total_cost,
+             avg(r.duration_ms) FILTER (WHERE r.status = 'done')::float8 AS avg_duration
+      FROM ${t.agentRuns} r
+      WHERE r.workspace_id = ${workspaceId}
+        AND r.agent_id IS NOT NULL
+        AND r.ran_at >= now() - make_interval(days => ${windowDays})
+        ${agentId ? sql`AND r.agent_id = ${agentId}` : sql``}
+      GROUP BY r.agent_id
+    `);
+    return rows.map((r) => ({
+      agentId: r.agent_id,
+      runs: Number(r.runs),
+      failed: Number(r.failed),
+      avgCostUsd: r.avg_cost == null ? null : Number(r.avg_cost),
+      totalCostUsd: r.total_cost == null ? null : Number(r.total_cost),
+      avgDurationMs: r.avg_duration == null ? null : Number(r.avg_duration),
+    }));
+  }
+
+  /** Findings of an agent's done runs, per severity, with triage counts. */
+  async findingAggregates(
+    workspaceId: string,
+    windowDays: number,
+    agentId?: string,
+  ): Promise<AgentFindingAggregate[]> {
+    const rows = await this.db.execute<{
+      agent_id: string;
+      severity: string;
+      findings: number;
+      accepted: number;
+      dismissed: number;
+    }>(sql`
+      SELECT r.agent_id, f.severity,
+             count(*)::int AS findings,
+             count(*) FILTER (WHERE f.accepted_at IS NOT NULL)::int AS accepted,
+             count(*) FILTER (WHERE f.dismissed_at IS NOT NULL)::int AS dismissed
+      FROM ${t.agentRuns} r
+      JOIN ${t.reviews} rv ON rv.run_id = r.id
+      JOIN ${t.findings} f ON f.review_id = rv.id
+      WHERE r.workspace_id = ${workspaceId}
+        AND r.agent_id IS NOT NULL
+        AND r.status = 'done'
+        AND r.ran_at >= now() - make_interval(days => ${windowDays})
+        ${agentId ? sql`AND r.agent_id = ${agentId}` : sql``}
+      GROUP BY r.agent_id, f.severity
+    `);
+    return rows.map((r) => ({
+      agentId: r.agent_id,
+      severity: r.severity,
+      findings: Number(r.findings),
+      accepted: Number(r.accepted),
+      dismissed: Number(r.dismissed),
+    }));
+  }
+
+  /** The agent's latest done runs (newest first) — the Stats trend line. */
+  async recentRuns(
+    agentId: string,
+    limit: number,
+  ): Promise<{ ranAt: Date; score: number | null; findings: number | null }[]> {
+    return this.db
+      .select({
+        ranAt: t.agentRuns.ranAt,
+        score: t.agentRuns.score,
+        findings: t.agentRuns.findingsCount,
+      })
+      .from(t.agentRuns)
+      .where(and(eq(t.agentRuns.agentId, agentId), eq(t.agentRuns.status, 'done')))
+      .orderBy(desc(t.agentRuns.ranAt))
+      .limit(limit);
   }
 }

@@ -2,6 +2,9 @@
 name: pr-self-review
 description: "Pre-PR self-review of ALL local changes (branch vs main + staged, unstaged and untracked files). Routes every changed file to the repo's own skills (UI skills on client files, onion/fastify/drizzle on server files, security on both), runs arch:check/lint/typecheck/check-shared for touched packages, and produces a PASS/BLOCK verdict. Any verified critical finding blocks: a gate stops `gh pr create` and `git push` until the verdict is PASS for exactly the pushed content. Use it before opening a pull request, before pushing a branch, when the gate blocks a push/PR, when the user says 'self-review', 'review my changes', 'ready for PR?', 'check before PR', or when /pr-self-review is invoked."
 argument-hint: "[--quick] [--no-cache]"
+# Manual only (M2): never auto-invoked by the model — run it as /pr-self-review.
+# The push/PR gate hook still requires a PASS verdict.
+disable-model-invocation: true
 metadata:
   version: "1.0.0"
   updated: "2026-11-27"

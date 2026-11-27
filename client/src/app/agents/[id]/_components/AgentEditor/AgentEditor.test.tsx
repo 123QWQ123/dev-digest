@@ -4,9 +4,12 @@ import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
 import type { Agent } from "@devdigest/shared";
 import messages from "../../../../../../messages/en/agents.json";
+import common from "../../../../../../messages/en/common.json";
 import { ToastProvider } from "@/lib/toast";
 
 // Mock the data hooks so the editor renders without a network/query client.
+// PromptEditor counts tokens via the API — stub it (no QueryClient in these tests).
+vi.mock("@/lib/hooks/tokens", () => ({ useTokenCount: () => ({ data: { tokens: 42 } }) }));
 vi.mock("@/lib/hooks/agents", () => ({
   useUpdateAgent: () => ({ mutate: vi.fn(), isPending: false, isSuccess: false, data: undefined }),
   useProviderModels: () => ({ data: [{ id: "gpt-4.1", provider: "openai" }] }),
@@ -33,7 +36,7 @@ const AGENT: Agent = {
 
 function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <NextIntlClientProvider locale="en" messages={{ agents: messages }}>
+    <NextIntlClientProvider locale="en" messages={{ agents: messages, common }}>
       <ToastProvider>{children}</ToastProvider>
     </NextIntlClientProvider>
   );

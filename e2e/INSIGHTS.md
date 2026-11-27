@@ -14,6 +14,7 @@
 - 2026-11-27 · A flow must `wait --text <row title>` before `find text <row title> click`: `wait --url /pulls` fires before the PR list has fetched, so 04/05 failed on every run (also on untouched HEAD) with `find text … click` — added the wait like 02 has (`specs/04-pr-findings.flow.json`)
 
 ## Tool & Library Notes
+- 2026-11-27 · `agent-browser wait --text` matches rendered text, so a label styled `text-transform: uppercase` (Stats tiles/panel titles) never matches its source string — wait on a non-transformed text (footnote, row name) instead (`specs/08-skills.flow.json`)
 
 ## Recurring Errors & Fixes
 - 2026-11-27 · `./scripts/e2e.sh` ends with `sh: tsx: command not found` (exit 127) after the whole stack came up: the script installs server/client deps but not `e2e/` — run `cd e2e && npm ci` once (`../scripts/e2e.sh:107`)

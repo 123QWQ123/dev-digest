@@ -115,7 +115,8 @@ export type MemoryItem = z.infer<typeof MemoryItem>;
 export const SkillType = z.enum(['rubric', 'convention', 'security', 'custom']);
 export type SkillType = z.infer<typeof SkillType>;
 
-export const SkillSource = z.enum(['manual', 'imported_url', 'extracted', 'community']);
+// 'imported' = uploaded .md/.zip via the import preview (M2); treated as untrusted in the UI.
+export const SkillSource = z.enum(['manual', 'imported', 'imported_url', 'extracted', 'community']);
 export type SkillSource = z.infer<typeof SkillSource>;
 
 export const Skill = z.object({
@@ -128,8 +129,108 @@ export const Skill = z.object({
   enabled: z.boolean(),
   version: z.number().int(),
   evidence_files: z.array(z.string()).nullish(),
+  /** Number of agents linking this skill (any link state). Absent on nested payloads. */
+  agent_count: z.number().int().optional(),
+  updated_at: z.string().optional(),
+  /** 30-day usage summary for the list card (absent on nested payloads). */
+  stats: z
+    .object({
+      /** Share (0..1) of linked agents' runs that rendered this skill; null = no runs. */
+      pull_rate: z.number().nullable(),
+      /** accepted / (accepted + dismissed) for findings of runs that used it; null = none triaged. */
+      accept_rate: z.number().nullable(),
+    })
+    .optional(),
 });
 export type Skill = z.infer<typeof Skill>;
+
+/** Window every usage stat is computed over. */
+export const STATS_WINDOW_DAYS = 30;
+
+export const CategoryCount = z.object({ category: z.string(), count: z.number().int() });
+export type CategoryCount = z.infer<typeof CategoryCount>;
+
+/**
+ * Skill Stats tab (M2). Findings are attributed to a skill when the run that produced
+ * them had the skill in its prompt (`run_skills`) — the model does not tag findings
+ * per skill, so this is co-occurrence, not causation.
+ */
+export const SkillStats = z.object({
+  skill_id: z.string(),
+  window_days: z.number().int(),
+  used_by: z.array(z.object({ id: z.string(), name: z.string(), enabled: z.boolean() })),
+  /** Completed runs (window) of agents that currently link the skill. */
+  agent_runs: z.number().int(),
+  /** Of those, runs that rendered the skill into the prompt. */
+  runs_with_skill: z.number().int(),
+  pull_rate: z.number().nullable(),
+  accept_rate: z.number().nullable(),
+  findings: z.number().int(),
+  findings_by_category: z.array(CategoryCount),
+});
+export type SkillStats = z.infer<typeof SkillStats>;
+
+/** Limits shared by the editor and the API. */
+export const SKILL_NAME_MAX = 64;
+export const SKILL_DESCRIPTION_MAX = 300;
+export const SKILL_BODY_MAX = 20_000;
+
+/** Skill name: kebab-case slug (it is shown as a `### heading` in the prompt). */
+export const SkillName = z
+  .string()
+  .min(1)
+  .max(SKILL_NAME_MAX)
+  .regex(/^[a-z0-9][a-z0-9-]*$/, 'Use lowercase letters, digits and dashes');
+
+/** Create payload. `source` defaults to manual; `imported` comes from the import preview. */
+export const CreateSkillInput = z.object({
+  name: SkillName,
+  description: z.string().trim().min(1).max(SKILL_DESCRIPTION_MAX),
+  type: SkillType,
+  body: z.string().trim().min(1).max(SKILL_BODY_MAX),
+  source: z.enum(['manual', 'imported']).optional(),
+  enabled: z.boolean().optional(),
+  note: z.string().max(200).optional(),
+});
+export type CreateSkillInput = z.infer<typeof CreateSkillInput>;
+
+/** Update payload. A content change bumps the version; `enabled` alone does not. */
+export const UpdateSkillInput = CreateSkillInput.omit({ source: true }).partial();
+export type UpdateSkillInput = z.infer<typeof UpdateSkillInput>;
+
+/** An immutable snapshot from `skill_versions`. */
+export const SkillVersion = z.object({
+  skill_id: z.string(),
+  version: z.number().int(),
+  name: z.string().nullable(),
+  description: z.string().nullable(),
+  type: SkillType.nullable(),
+  body: z.string(),
+  note: z.string().nullable(),
+  created_at: z.string(),
+});
+export type SkillVersion = z.infer<typeof SkillVersion>;
+
+/** `POST /skills/import/preview` request: the raw file, base64-encoded. */
+export const SkillImportRequest = z.object({
+  filename: z.string().min(1).max(255),
+  content_base64: z.string().min(1),
+});
+export type SkillImportRequest = z.infer<typeof SkillImportRequest>;
+
+/** The extracted skill core. Nothing is persisted until the user saves it. */
+export const SkillImportPreview = z.object({
+  name: z.string(),
+  description: z.string(),
+  type: SkillType,
+  body: z.string(),
+  /** Path of the markdown entry the skill was read from. */
+  source_file: z.string(),
+  /** Archive entries that were NOT read (scripts, binaries, other files) — never executed. */
+  ignored_files: z.array(z.string()),
+  warnings: z.array(z.string()),
+});
+export type SkillImportPreview = z.infer<typeof SkillImportPreview>;
 
 export const CommunitySkill = z.object({
   name: z.string(),
@@ -188,6 +289,16 @@ export const Agent = z.object({
   // Inject repo-intel context (repo skeleton + callers + rank note) into this
   // agent's review prompt. Default on; gated again by the global flag.
   repo_intel: z.boolean().default(true),
+  /** Skills that reach this agent's prompt (link enabled AND skill enabled). */
+  skill_count: z.number().int().optional(),
+  /** 30-day summary for the list card (absent on nested payloads). */
+  stats: z
+    .object({
+      runs: z.number().int(),
+      accept_rate: z.number().nullable(),
+      avg_cost_usd: z.number().nullable(),
+    })
+    .optional(),
 });
 export type Agent = z.infer<typeof Agent>;
 
@@ -197,6 +308,31 @@ export const AgentSkillLink = z.object({
   order: z.number().int(),
 });
 export type AgentSkillLink = z.infer<typeof AgentSkillLink>;
+
+/** A skill linked to an agent, as shown in the agent editor's Skills tab. */
+export const AgentSkill = z.object({
+  skill_id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  type: SkillType,
+  order: z.number().int(),
+  /** Per-agent switch. */
+  enabled: z.boolean(),
+  /** Global skill switch; a disabled skill never reaches any prompt. */
+  skill_enabled: z.boolean(),
+});
+export type AgentSkill = z.infer<typeof AgentSkill>;
+
+/** `PUT /agents/:id/skills` — the full ordered link set (array order = prompt order). */
+export const SetAgentSkillsInput = z.object({
+  items: z
+    .array(z.object({ skill_id: z.string().uuid(), enabled: z.boolean() }))
+    .max(100)
+    .refine((xs) => new Set(xs.map((x) => x.skill_id)).size === xs.length, {
+      message: 'Duplicate skill_id',
+    }),
+});
+export type SetAgentSkillsInput = z.infer<typeof SetAgentSkillsInput>;
 
 // The immutable config snapshot captured in `agent_versions` whenever an agent's
 // config changes (everything but `enabled`). Mirrors the shape written by the

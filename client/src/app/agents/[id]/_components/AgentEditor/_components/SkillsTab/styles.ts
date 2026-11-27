@@ -1,0 +1,63 @@
+import type { CSSProperties } from "react";
+
+/** Co-located styles for the agent editor's Skills tab. */
+export const s = {
+  wrap: { maxWidth: 760 } satisfies CSSProperties,
+  header: { display: "flex", alignItems: "center", gap: 12, marginBottom: 8 } satisfies CSSProperties,
+  h2: { fontSize: 18, fontWeight: 700 } satisfies CSSProperties,
+  filter: {
+    marginLeft: "auto",
+    width: 220,
+    background: "var(--bg-elevated)",
+    border: "1px solid var(--border)",
+    borderRadius: 6,
+    padding: "6px 10px",
+    fontSize: 13,
+    color: "var(--text-primary)",
+  } satisfies CSSProperties,
+  hint: { fontSize: 13, color: "var(--text-muted)", marginBottom: 16 } satisfies CSSProperties,
+  list: { display: "flex", flexDirection: "column", gap: 6 } satisfies CSSProperties,
+  row: (linked: boolean, dragging: boolean, dropTarget: boolean): CSSProperties => ({
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "8px 12px",
+    borderRadius: 8,
+    borderTop: "1px solid " + (dropTarget ? "var(--accent)" : "var(--border)"),
+    borderRight: "1px solid var(--border)",
+    borderBottom: "1px solid var(--border)",
+    borderLeft: "1px solid var(--border)",
+    background: linked ? "var(--bg-elevated)" : "transparent",
+    opacity: dragging ? 0.4 : 1,
+  }),
+  grip: (enabled: boolean): CSSProperties => ({
+    color: "var(--text-muted)",
+    cursor: enabled ? "grab" : "default",
+    display: "inline-flex",
+    visibility: enabled ? "visible" : "hidden",
+  }),
+  arrows: { display: "flex", flexDirection: "column" } satisfies CSSProperties,
+  arrowBtn: {
+    background: "none",
+    border: "none",
+    padding: 0,
+    lineHeight: 0,
+    color: "var(--text-muted)",
+    cursor: "pointer",
+  } satisfies CSSProperties,
+  name: (muted: boolean): CSSProperties => ({
+    fontSize: 13,
+    fontWeight: 600,
+    color: muted ? "var(--text-muted)" : "var(--text-primary)",
+  }),
+  desc: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 12,
+    color: "var(--text-muted)",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  } satisfies CSSProperties,
+  divider: { height: 1, background: "var(--border)", margin: "8px 0" } satisfies CSSProperties,
+} as const;

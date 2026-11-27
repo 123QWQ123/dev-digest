@@ -1,15 +1,15 @@
 import type { Container } from '../../platform/container.js';
 
 /** The container members this code actually uses (explicit deps, not a service locator). */
-export type RunExecutorDeps = Pick<Container, 'llm' | 'repoIntel' | 'runBus' | 'git'>;
+export type RunExecutorDeps = Pick<Container, 'llm' | 'repoIntel' | 'runBus' | 'git' | 'tokenizer'>;
 import type { Provider, Review, RunTrace, UnifiedDiff } from '@devdigest/shared';
-import { reviewPullRequest, countBlockers } from '@devdigest/reviewer-core';
+import { reviewPullRequest, countBlockers, formatSkill } from '@devdigest/reviewer-core';
 import { RunLogger } from '../../platform/run-logger.js';
 import type { RepoRow } from '../../db/rows.js';
 import type { AgentRow } from '../../db/rows.js';
 import type { ReviewRepository, FindingRow, PullRow, ReviewRow } from './repository.js';
 import { REVIEW_STRATEGY } from './constants.js';
-import { taskLine } from './helpers.js';
+import { promptTokens, taskLine } from './helpers.js';
 import { loadDiff } from './diff-loader.js';
 
 /** Thrown by a run when the user cancels it mid-flight (between map files). */
@@ -187,6 +187,15 @@ export class ReviewRunExecutor {
 
       const task = taskLine(pull) + rankNote;
 
+      // M2 — skills: only the effective set (link enabled AND skill enabled), in
+      // link order. Rendered into the user message's `## Skills / rules` block.
+      const skills = await this.agents.effectiveSkills(agent.id);
+      if (skills.length > 0) {
+        runLog.info(
+          `Applying ${skills.length} skill(s): ${skills.map((l) => l.skill.name).join(', ')}`,
+        );
+      }
+
       // ---- Engine: assemble → single-pass → grounding -----------------------
       // The pure review pipeline lives in @devdigest/reviewer-core (shared with
       // the CI runner). The service owns only I/O: repo-intel context resolution
@@ -204,6 +213,9 @@ export class ReviewRunExecutor {
         ...(callersDigest ? { callers: callersDigest } : {}),
         // T3 — repo skeleton, same omit-when-empty contract.
         ...(repoMap ? { repoMap } : {}),
+        ...(skills.length > 0
+          ? { skills: skills.map((l) => formatSkill(l.skill.name, l.skill.body)) }
+          : {}),
         // PR author's description/body — untrusted; assemblePrompt wraps +
         // truncates it. Omitted when the PR has no body.
         ...(pull.body ? { prDescription: pull.body } : {}),
@@ -257,6 +269,11 @@ export class ReviewRunExecutor {
         error: null,
       });
 
+      await this.repo.recordRunSkills(
+        runId,
+        skills.map((l) => ({ skillId: l.skill.id, version: l.skill.version })),
+      );
+
       const trace: RunTrace = {
         config: {
           agent: agent.name,
@@ -274,7 +291,17 @@ export class ReviewRunExecutor {
           findings: findingRows.length,
           grounding,
         },
-        prompt_assembly: outcome.assembly,
+        prompt_assembly: {
+          ...outcome.assembly,
+          skills_used: skills.map((l) => ({
+            id: l.skill.id,
+            name: l.skill.name,
+            version: l.skill.version,
+          })),
+        },
+        prompt_tokens: promptTokens(outcome.assembly, (text) =>
+          this.container.tokenizer.count(text),
+        ),
         tool_calls: outcome.chunks.map((c) => ({
           tool: 'review_file',
           args: c.label,

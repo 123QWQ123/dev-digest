@@ -14,6 +14,18 @@ export const queryKeys = {
   context: (repoId: Id) => ["context", repoId] as const,
   agents: () => ["agents"] as const,
   agent: (id: Id) => ["agent", id] as const,
+  agentSkills: (agentId: Id) => ["agent-skills", agentId] as const,
+  /** Prefix matching every agent's link set (a skill edit changes all of them). */
+  agentSkillsAll: () => ["agent-skills"] as const,
+  skills: () => ["skills"] as const,
+  skill: (id: Id) => ["skill", id] as const,
+  skillVersions: (id: Id) => ["skill-versions", id] as const,
+  skillStats: (id: Id) => ["skill-stats", id] as const,
+  /** Prefix matching every skill's stats (a triaged finding moves them all). */
+  skillStatsAll: () => ["skill-stats"] as const,
+  agentStats: (id: Id) => ["agent-stats", id] as const,
+  agentStatsAll: () => ["agent-stats"] as const,
+  tokenCount: (text: string) => ["token-count", text] as const,
   providerModels: (provider: Id) => ["provider-models", provider] as const,
   /** Prefix matching every provider's model list (for invalidation). */
   providerModelsAll: () => ["provider-models"] as const,
