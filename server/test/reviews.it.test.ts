@@ -157,6 +157,19 @@ d('A2 reviews + agents (Testcontainers pg)', () => {
     await app.close();
   });
 
+  it('POST /pulls/:id/review: empty body → 400 invalid_run_request, wrong types → 422', async () => {
+    const app = await appWith(REVIEW_FIXTURE);
+    const { pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
+
+    const empty = await app.inject({ method: 'POST', url: `/pulls/${pr.id}/review` });
+    expect(empty.statusCode).toBe(400);
+    expect(empty.json().error.code).toBe('invalid_run_request');
+
+    const bad = await app.inject({ method: 'POST', url: `/pulls/${pr.id}/review`, payload: { all: 'yes' } });
+    expect(bad.statusCode).toBe(422);
+    await app.close();
+  });
+
   it('runs a review: map-reduce + grounding drops the hallucinated finding, keeps the valid one', async () => {
     const app = await appWith(REVIEW_FIXTURE);
     const { pr } = await setupRepoAndPr(pg.handle.db, workspaceId);

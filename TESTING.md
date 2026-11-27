@@ -41,7 +41,9 @@ surface (list, diff, findings, run controls) and the agent editor.
 **server-unit** — the DB-free majority: adapters, prompt assembly, grounding,
 repo-intel ranking & indexing, pricing, route smoke. The `typecheck` job also
 runs on Windows, which doubles as the `@ast-grep/napi` prebuilt gate (install
-fails there if the win32 prebuilt is missing).
+fails there if the win32 prebuilt is missing). It also runs `pnpm arch:check` —
+dependency-cruiser layer rules (Onion Architecture, see the `onion-architecture`
+skill); only violations not in the baseline fail.
 
 **server-integration** — the `*.it.test.ts` files. Each starts a real Postgres
 (pgvector) via testcontainers, builds the Fastify app, migrates + seeds, and
@@ -67,6 +69,7 @@ cd reviewer-core && npm test
 cd server && pnpm exec vitest run --exclude '**/*.it.test.ts'   # unit, no Docker
 cd server && pnpm exec vitest run .it.test                      # integration, needs Docker
 cd server && pnpm test                                          # both
+cd server && pnpm arch:check                                    # layer rules (dependency-cruiser)
 
 # browser e2e (needs the full stack + agent-browser CLI)
 ./scripts/dev.sh

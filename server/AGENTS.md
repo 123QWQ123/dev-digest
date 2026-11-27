@@ -2,12 +2,15 @@
 
 ## Commands
 - dev `pnpm dev` (:3001) · `pnpm typecheck` · `pnpm test` (unit + integration)
+- layers `pnpm arch:check` (Onion rules, dependency-cruiser; fails on new violations only) ·
+  `pnpm arch:baseline` (re-record known violations — only after FIXING some, never to hide new ones)
 - unit only: `pnpm exec vitest run --exclude '**/*.it.test.ts'`
 - integration only: `pnpm exec vitest run .it.test` (needs Docker, testcontainers)
 - DB: `pnpm db:migrate` · `pnpm db:seed` (idempotent) · `pnpm db:generate` (new migration)
 
 ## Where things are
-- `src/modules/<name>/{routes,service,repository}.ts` — one Fastify plugin per feature
+- `src/modules/<name>/{routes,compose,service,repository}.ts` — one Fastify plugin per feature;
+  `compose.ts` builds the service (routes never import the repository — see `onion-architecture` skill)
 - `src/modules/index.ts` — static module registry
 - `src/platform/container.ts` — DI composition root; `src/adapters/` — external I/O
 - `src/adapters/mocks.ts` — test doubles (MockLLMProvider, MockGitClient, …)
@@ -35,6 +38,8 @@
 - API map, request/DI flow, env vars, what goes into the review prompt → read `README.md`
 - Touching indexing, repo map, file rank, callers → read `src/modules/repo-intel/README.md`
 - Writing tests → read `../TESTING.md`
+- Creating/changing a module, route, service, repository or adapter, or "where does this go" →
+  use the `onion-architecture` skill
 - Implementing a feature → read `specs/`
 - Design decisions, ADRs → read `docs/`
 - Before starting ANY work here → read `INSIGHTS.md` (mandatory)

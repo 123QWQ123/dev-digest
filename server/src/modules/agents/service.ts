@@ -1,4 +1,7 @@
 import type { Container } from '../../platform/container.js';
+
+/** The container members this code actually uses (explicit deps, not a service locator). */
+export type AgentsServiceDeps = Pick<Container, 'db' | 'llm'>;
 import type {
   Agent,
   AgentSkillLink,
@@ -51,7 +54,7 @@ export interface UpdateAgentInput {
 export class AgentsService {
   private repo: AgentsRepository;
 
-  constructor(private container: Container) {
+  constructor(private container: AgentsServiceDeps) {
     this.repo = new AgentsRepository(container.db);
   }
 

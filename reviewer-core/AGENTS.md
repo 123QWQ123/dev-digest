@@ -14,6 +14,10 @@ Pipeline: inputs → assemblePrompt (+ INJECTION_GUARD) → injected LLMProvider
 
 ## Gotchas
 - NO I/O here: no DB, fs, GitHub, env. The only side effect is the injected LLMProvider.
+- One sanctioned adapter: `src/llm/openrouter.ts` (OpenAI-compatible `LLMProvider`, does network I/O). It
+  ships here because BOTH consumers need it (server's openrouter path + the CI runner that runs this
+  package directly). The pipeline never imports it — it's only re-exported from `index.ts` and injected.
+  Keep it that way; don't add other adapters here.
 - Consumed by server as TS source (tsconfig alias). Breaking an export breaks server typecheck.
 - Uses npm (package-lock.json), unlike server/client.
 - Optional prompt slots (skills, memory, specs, callers) and reduce/toReview exist for later milestones;

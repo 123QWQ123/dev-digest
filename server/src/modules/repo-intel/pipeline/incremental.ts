@@ -18,6 +18,9 @@ import { extname } from 'node:path';
 import { readContainedFile } from '../../../platform/contained-read.js';
 import type { RepoRef } from '@devdigest/shared';
 import type { Container } from '../../../platform/container.js';
+
+/** The container members this code actually uses (explicit deps, not a service locator). */
+export type IncrementalPipelineDeps = Pick<Container, 'depgraph' | 'git' | 'tokenizer'>;
 import { withTimeout } from '../../../platform/resilience.js';
 import { parseSymbols, parseReferences, langForFile } from '../../../adapters/astgrep/index.js';
 import { extractEndpoints, extractCrons } from '../../../adapters/codeindex/extract.js';
@@ -50,7 +53,7 @@ const INCREMENTAL_FULL_THRESHOLD = 300;
 const SUPPORTED_SET: ReadonlySet<string> = new Set(SUPPORTED_EXT);
 
 export async function runIncremental(
-  container: Container,
+  container: IncrementalPipelineDeps,
   repository: RepoIntelRepository,
   payload: IndexPayload,
 ): Promise<IndexResult> {

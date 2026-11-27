@@ -6,7 +6,15 @@
  * + age, so it gets unit coverage independent of the route's queries.
  */
 import { describe, it, expect } from 'vitest';
-import { deriveReviewStatus, latestReviewPerAgent, rollupSeverities, totalPrCost, STALE_DAYS } from '../src/modules/pulls/status.js';
+import {
+  deriveReviewStatus,
+  latestReviewPerAgent,
+  latestScorePerPr,
+  rollupSeverities,
+  roundSeverities,
+  totalPrCost,
+  STALE_DAYS,
+} from '../src/modules/pulls/status.js';
 
 const DAY = 86_400_000;
 const now = Date.UTC(2026, 5, 11);
@@ -102,5 +110,32 @@ describe('latestReviewPerAgent (M1 PR-list FINDINGS)', () => {
     expect(m.get('p1')).toEqual(['a']);
     expect(m.get('p2')).toEqual(['b']);
     expect(m.has('p3')).toBe(false);
+  });
+});
+
+describe('latestScorePerPr', () => {
+  it('takes the first (newest) row per PR, keeping a null score', () => {
+    const m = latestScorePerPr([
+      { prId: 'a', score: null },
+      { prId: 'a', score: 90 },
+      { prId: 'b', score: 70 },
+    ]);
+    expect(m.get('a')).toEqual({ score: null });
+    expect(m.get('b')).toEqual({ score: 70 });
+    expect(m.has('c')).toBe(false);
+  });
+});
+
+describe('roundSeverities', () => {
+  it('sums the findings of each PR round, ignoring reviews outside the round', () => {
+    const rounds = new Map([['pr1', ['r1', 'r2']], ['pr2', ['r3']]]);
+    const m = roundSeverities(rounds, [
+      { reviewId: 'r1', severity: 'CRITICAL' },
+      { reviewId: 'r2', severity: 'WARNING' },
+      { reviewId: 'r2', severity: 'WARNING' },
+      { reviewId: 'old', severity: 'CRITICAL' },
+    ]);
+    expect(m.get('pr1')).toEqual({ reviewIds: ['r1', 'r2'], counts: { critical: 1, warning: 2, suggestion: 0 } });
+    expect(m.get('pr2')).toEqual({ reviewIds: ['r3'], counts: { critical: 0, warning: 0, suggestion: 0 } });
   });
 });

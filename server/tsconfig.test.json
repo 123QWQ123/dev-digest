@@ -1,0 +1,7 @@
+{
+  // Type-checks the tests too (vitest strips types, so broken test types would
+  // otherwise go unnoticed). Not used for builds.
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true, "declaration": false, "sourceMap": false },
+  "include": ["src/**/*.ts", "test/**/*.ts", "vitest.config.ts"]
+}
