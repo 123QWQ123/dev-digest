@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
-import type { PrDetail, PrMeta } from '@devdigest/shared';
+import { PrStatus, type PrDetail, type PrMeta } from '@devdigest/shared';
 import type { Db } from '../../db/client.js';
 import * as t from '../../db/schema.js';
 import type { PullRow, RepoRow } from '../../db/rows.js';
@@ -190,7 +190,8 @@ export class PullsRepository {
       additions: pr.additions,
       deletions: pr.deletions,
       files_count: pr.filesCount,
-      status: pr.status as PrDetail['status'],
+      // DB column is free text; an unknown legacy value falls back to the column default.
+      status: PrStatus.safeParse(pr.status).data ?? 'needs_review',
       opened_at: pr.openedAt?.toISOString() ?? null,
       updated_at: pr.updatedAt?.toISOString() ?? null,
       body: pr.body ?? null,

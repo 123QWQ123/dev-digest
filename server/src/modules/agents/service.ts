@@ -1,7 +1,4 @@
 import type { Container } from '../../platform/container.js';
-
-/** The container members this code actually uses (explicit deps, not a service locator). */
-export type AgentsServiceDeps = Pick<Container, 'llm'>;
 import type {
   Agent,
   AgentSkillLink,
@@ -13,6 +10,9 @@ import type {
 } from '@devdigest/shared';
 import type { AgentsRepository } from './repository.js';
 import { toAgentDto, toAgentVersionDto } from './helpers.js';
+
+/** The container members this code actually uses (explicit deps, not a service locator). */
+export type AgentsServiceDeps = Pick<Container, 'llm'>;
 
 /**
  * A2 — agents service. Business logic for the Agents tab + Agent Editor.

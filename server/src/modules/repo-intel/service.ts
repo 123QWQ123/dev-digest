@@ -19,9 +19,6 @@
  */
 import type { CodeSymbol, RepoRef } from '@devdigest/shared';
 import type { Container } from '../../platform/container.js';
-
-/** The container members this code actually uses (explicit deps, not a service locator). */
-export type RepoIntelServiceDeps = Pick<Container, 'codeIndex' | 'config' | 'git' | 'jobs' | 'depgraph' | 'tokenizer'>;
 import { extractEndpoints } from '../../adapters/codeindex/extract.js';
 import {
   parseImports,
@@ -31,7 +28,7 @@ import {
 } from '../../adapters/astgrep/index.js';
 import { readContainedFile } from '../../platform/contained-read.js';
 import { extname } from 'node:path';
-import { RepoIntelRepository, type FullSymbolRow } from './repository.js';
+import type { RepoIntelRepository, FullSymbolRow } from './repository.js';
 import type {
   BlastCallerRow,
   BlastChangedSymbol,
@@ -57,6 +54,9 @@ import {
 } from './constants.js';
 import { runFullIndex, type IndexPayload } from './pipeline/full.js';
 import { runIncremental } from './pipeline/incremental.js';
+
+/** The container members this code actually uses (explicit deps, not a service locator). */
+export type RepoIntelServiceDeps = Pick<Container, 'codeIndex' | 'config' | 'git' | 'jobs' | 'depgraph' | 'tokenizer'>;
 
 /**
  * GLOBALS allowlist — common JS/TS builtins + runtime that appear as bare

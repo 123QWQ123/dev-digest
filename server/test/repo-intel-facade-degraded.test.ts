@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { RepoIntelService } from '../src/modules/repo-intel/service.js';
-import type { RepoBasics } from '../src/modules/repo-intel/repository.js';
+import { RepoIntelService, type RepoIntelServiceDeps } from '../src/modules/repo-intel/service.js';
+import type { RepoBasics, RepoIntelRepository } from '../src/modules/repo-intel/repository.js';
 import type { IndexState } from '../src/modules/repo-intel/types.js';
 
 /**
@@ -20,22 +20,31 @@ function buildDegradedService(opts: {
   basics?: RepoBasics | null;
   indexStateRow?: IndexState | null;
 }): RepoIntelService {
+  // Only the members the degraded paths reach are stubbed; each stub is
+  // type-checked against the real signatures before the single widening cast.
   const container = {
-    config: { repoIntelEnabled: opts.flag },
+    config: { repoIntelEnabled: opts.flag } satisfies Pick<RepoIntelServiceDeps['config'], 'repoIntelEnabled'>,
     // codeIndex is reached by getBlastRadius; we stub minimal behaviour.
     codeIndex: {
+      grep: async () => [],
       symbols: async () => [],
       references: async () => [],
-    } as never,
-  } as never;
+    },
+  } satisfies { config: Pick<RepoIntelServiceDeps['config'], 'repoIntelEnabled'> } & Pick<RepoIntelServiceDeps, 'codeIndex'>;
   const repo = {
     getRepoBasics: async () => opts.basics ?? null,
     tryGetIndexState: async () => opts.indexStateRow ?? null,
     getCachedSymbols: async () => [],
     getCachedSymbolsForFiles: async () => [],
     getCachedReferencesTo: async () => [],
-  } as never;
-  return new RepoIntelService(container, repo);
+  } satisfies Pick<
+    RepoIntelRepository,
+    'getRepoBasics' | 'tryGetIndexState' | 'getCachedSymbols' | 'getCachedSymbolsForFiles' | 'getCachedReferencesTo'
+  >;
+  return new RepoIntelService(
+    container as unknown as RepoIntelServiceDeps,
+    repo as unknown as RepoIntelRepository,
+  );
 }
 
 describe('RepoIntel facade — degraded contract (flag off)', () => {
