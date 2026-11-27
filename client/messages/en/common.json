@@ -20,5 +20,13 @@
   },
   "cost": {
     "tokens": "{count} tok"
+  },
+  "routeError": {
+    "body": "This page hit an unexpected error. Try again — if it keeps happening, reload the app."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "This page doesn't exist — the link may be stale.",
+    "cta": "Back to the app"
   }
 }

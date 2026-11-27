@@ -27,8 +27,9 @@ Node ≥22 · TypeScript · Zod 3 · Postgres 16 + pgvector (the only thing in D
 - Per package: `typecheck` · `test` (pnpm in server/client, npm in reviewer-core/e2e)
 
 ## Cross-package gotchas
-- `@devdigest/shared` is COPIED: server/src/vendor/shared AND client/src/vendor/shared
-  (tsconfig path alias, not a package). Copies have already drifted. Contract change → update both.
+- `@devdigest/shared` is COPIED: server/src/vendor/shared (canonical) AND client/src/vendor/shared
+  (tsconfig path alias, not a package). Edit the server copy, then `./scripts/check-shared.sh --fix`;
+  CI (client.yml) fails if the copies differ.
 - reviewer-core is consumed by server as TS source via path alias; it never emits JS.
 - DB schema already holds tables for the whole roadmap; empty tables are intentional.
 - API has no auth by design (local-only). Never expose it beyond 127.0.0.1.
@@ -36,8 +37,8 @@ Node ≥22 · TypeScript · Zod 3 · Postgres 16 + pgvector (the only thing in D
 
 ## Use when
 - Stack, roadmap, system architecture, how to run → read `README.md`
-- Working inside a package → read that package's CLAUDE.md: `server/CLAUDE.md`, `client/CLAUDE.md`,
-  `reviewer-core/CLAUDE.md`, `e2e/CLAUDE.md`
+- Working inside a package → read that package's AGENTS.md: `server/AGENTS.md`, `client/AGENTS.md`,
+  `reviewer-core/AGENTS.md`, `e2e/AGENTS.md`
 - Touching the review pipeline (prompt, LLM, grounding) → read `reviewer-core/README.md`
 - Adding or changing an API route / contract → read `server/README.md` (sections "API map", "Request & DI flow")
 - Implementing a feature → read its spec in `<pkg>/specs/` (e2e: `e2e/docs/specs/`); write one if missing

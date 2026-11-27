@@ -9,10 +9,14 @@ on:
     branches: [main]
     paths:
       - 'client/**'
+      - 'server/src/vendor/shared/**'
+      - 'scripts/check-shared.sh'
       - '.github/workflows/client.yml'
   pull_request:
     paths:
       - 'client/**'
+      - 'server/src/vendor/shared/**'
+      - 'scripts/check-shared.sh'
       - '.github/workflows/client.yml'
 
 permissions:
@@ -42,8 +46,18 @@ jobs:
           cache: pnpm
           cache-dependency-path: client/pnpm-lock.yaml
 
+      # server/src/vendor/shared is canonical; the client copy must match it.
+      - name: Shared contracts in sync
+        working-directory: .
+        run: ./scripts/check-shared.sh
+
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm typecheck
+
+      - run: pnpm lint
+
+      # Import boundaries (frontend-architecture skill §7), dependency-cruiser.
+      - run: pnpm arch:check
 
       - run: pnpm test

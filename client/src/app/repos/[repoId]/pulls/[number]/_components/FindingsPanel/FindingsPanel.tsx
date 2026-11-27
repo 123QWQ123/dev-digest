@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { Toggle, EmptyState, Icon, SEV, type Severity } from "@devdigest/ui";
 import type { FindingRecord } from "@devdigest/shared";
 import { FindingCard } from "../FindingCard";
-import { useFindingAction } from "../../../../../../../lib/hooks/reviews";
+import { useFindingAction } from "@/lib/hooks/reviews";
 import { KEY_TO_ACTION } from "./constants";
 import { visibleFindings, severityCounts } from "./helpers";
 import { s } from "./styles";
@@ -55,7 +55,13 @@ export function FindingsPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [findings, hideLow, activeKey],
   );
-  React.useEffect(() => setFocusIdx(0), [activeKey]);
+  // Changing the severity filter resets keyboard focus to the first card —
+  // adjusted during render (no effect → no extra render with a stale index).
+  const [focusFilterKey, setFocusFilterKey] = React.useState(activeKey);
+  if (focusFilterKey !== activeKey) {
+    setFocusFilterKey(activeKey);
+    setFocusIdx(0);
+  }
 
   // Reveal request: make sure the target isn't hidden by the low-confidence or
   // severity filter, and move keyboard focus to it. The card expands + scrolls.

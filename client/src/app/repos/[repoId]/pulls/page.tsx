@@ -15,8 +15,9 @@ import { AppShell } from "@/components/app-shell";
 import { RepoNotFound } from "@/components/repo-not-found";
 import { usePulls, useRefreshRepo } from "@/lib/hooks";
 import { useActiveRepo, useRepoNotFound } from "@/lib/repo-context";
-import { ApiError } from "@/lib/api";
+import { ApiError } from "@/lib/api-error";
 import { COLUMN_KEYS, SKELETON_ROWS } from "./constants";
+import { filterAndSortPulls, parsePullSort } from "./helpers";
 import { s } from "./styles";
 import { PRRow } from "./_components/PRRow";
 import { FilterBar } from "./_components/FilterBar";
@@ -37,25 +38,20 @@ export default function PullsPage() {
 
   // Default to "needs review" — the most actionable filter on open.
   const status = search.get("status") ?? "needs_review";
-  const setStatus = (k: string) => {
+  const setParam = (key: string, value: string) => {
     const sp = new URLSearchParams(search.toString());
-    sp.set("status", k); // always explicit so "all" sticks over the needs_review default
+    sp.set(key, value);
     router.replace(`/repos/${repoId}/pulls?${sp.toString()}`);
   };
-
+  // Always explicit so "all" sticks over the needs_review default.
+  const setStatus = (k: string) => setParam("status", k);
+  // Sort lives in the URL (shareable, survives reload) like the status filter.
+  const sort = parsePullSort(search.get("sort"));
+  const setSort = (v: string) => setParam("sort", parsePullSort(v));
+  // The search box stays local: replacing the URL on every keystroke lags the input.
   const [query, setQuery] = React.useState("");
-  const [sort, setSort] = React.useState("newest");
 
-  const q = query.trim().toLowerCase();
-  const filtered = (pulls ?? [])
-    .filter((p) => status === "all" || p.status === status)
-    .filter((p) => !q || p.title.toLowerCase().includes(q) || String(p.number).includes(q))
-    .slice()
-    .sort((a, b) => {
-      const ta = Date.parse(a.updated_at ?? "") || 0;
-      const tb = Date.parse(b.updated_at ?? "") || 0;
-      return sort === "oldest" ? ta - tb : tb - ta;
-    });
+  const filtered = filterAndSortPulls(pulls ?? [], { status, query, sort });
   const repoName = activeRepo?.full_name ?? repoId;
   const openCount = (pulls ?? []).filter((p) => OPEN_STATUSES.has(p.status)).length;
   const needsReviewCount = (pulls ?? []).filter((p) => p.status === "needs_review").length;

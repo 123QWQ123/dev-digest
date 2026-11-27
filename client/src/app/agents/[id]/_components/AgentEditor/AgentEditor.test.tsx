@@ -1,12 +1,12 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import type { Agent } from "@devdigest/shared";
 import messages from "../../../../../../messages/en/agents.json";
-import { ToastProvider } from "../../../../../lib/toast";
+import { ToastProvider } from "@/lib/toast";
 
 // Mock the data hooks so the editor renders without a network/query client.
-vi.mock("../../../../../lib/hooks/agents", () => ({
+vi.mock("@/lib/hooks/agents", () => ({
   useUpdateAgent: () => ({ mutate: vi.fn(), isPending: false, isSuccess: false, data: undefined }),
   useProviderModels: () => ({ data: [{ id: "gpt-4.1", provider: "openai" }] }),
 }));
@@ -44,5 +44,22 @@ describe("A2 Agent Editor (smoke)", () => {
     expect(screen.getByText("Config")).toBeInTheDocument();
     expect(screen.getByText("Configuration")).toBeInTheDocument();
     expect(screen.getByText("Save agent")).toBeInTheDocument();
+  });
+
+  it("switching to another agent shows that agent's values (form remounts, no stale edits)", () => {
+    const view = renderWithIntl(<AgentEditor agent={AGENT} tab="config" onTab={() => {}} />);
+    const name = () => screen.getByDisplayValue(/Reviewer|Auditor|edited/) as HTMLInputElement;
+    fireEvent.change(name(), { target: { value: "edited name" } });
+    expect(name().value).toBe("edited name");
+
+    const other: Agent = { ...AGENT, id: "ag2", name: "Perf Auditor" };
+    view.rerender(
+      <NextIntlClientProvider locale="en" messages={{ agents: messages }}>
+        <ToastProvider>
+          <AgentEditor agent={other} tab="config" onTab={() => {}} />
+        </ToastProvider>
+      </NextIntlClientProvider>,
+    );
+    expect(name().value).toBe("Perf Auditor");
   });
 });

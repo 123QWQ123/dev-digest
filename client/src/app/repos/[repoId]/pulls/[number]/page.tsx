@@ -8,19 +8,25 @@
 import React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Skeleton, ErrorState } from "@devdigest/ui";
-import { AppShell } from "../../../../../components/app-shell";
+import { AppShell } from "@/components/app-shell";
 import { RepoNotFound } from "@/components/repo-not-found";
 import { PrDetailHeader } from "./_components/PrDetailHeader";
 import { OverviewTab } from "./_components/OverviewTab";
 import { FindingsTab } from "./_components/FindingsTab";
 import { DiffTab } from "./_components/DiffTab";
 import RunTraceDrawer from "./_components/RunTraceDrawer";
-import { usePullDetail, usePulls } from "../../../../../lib/hooks";
-import { useQueryClient } from "@tanstack/react-query";
-import { usePrReviews, useCancelRun, usePrActiveRuns, usePrRuns, useDeleteRun } from "../../../../../lib/hooks/reviews";
-import { useActiveRepo, useRepoNotFound } from "../../../../../lib/repo-context";
-import { ApiError } from "../../../../../lib/api";
-import { githubPrUrl } from "../../../../../lib/github-urls";
+import { usePullDetail, usePulls } from "@/lib/hooks/core";
+import {
+  usePrReviews,
+  useCancelRun,
+  usePrActiveRuns,
+  usePrRuns,
+  useDeleteRun,
+  useRunStateInvalidation,
+} from "@/lib/hooks/reviews";
+import { useActiveRepo, useRepoNotFound } from "@/lib/repo-context";
+import { ApiError } from "@/lib/api-error";
+import { githubPrUrl } from "@/lib/github-urls";
 import type { FindingRecord } from "@devdigest/shared";
 
 export default function PRDetailPage() {
@@ -41,21 +47,14 @@ export default function PRDetailPage() {
 
   // Live run tracking is SERVER-SOURCED (agent_runs status='running'): survives
   // navigation AND reload, and self-clears via polling when runs finish.
-  const qc = useQueryClient();
   const { data: activeRuns } = usePrActiveRuns(prId);
   const { data: prRuns } = usePrRuns(prId);
   const deleteRun = useDeleteRun(prId);
   const liveRunIds = (activeRuns ?? []).map((r) => r.run_id);
   const reviewRunning = liveRunIds.length > 0;
   const cancel = useCancelRun();
-  const invalidateActiveRuns = () => {
-    if (prId) qc.invalidateQueries({ queryKey: ["pr-active-runs", prId] });
-  };
-  // When a run settles (done OR failed) refresh the full run history too, so a
-  // just-failed run shows up in "Run history" immediately — no page reload.
-  const invalidateRunHistory = () => {
-    if (prId) qc.invalidateQueries({ queryKey: ["pr-runs", prId] });
-  };
+  // When a run settles (done OR failed) refresh live runs + the run history.
+  const { invalidateActiveRuns, invalidateRunHistory } = useRunStateInvalidation(prId);
 
   const tab = search.get("tab") ?? "overview";
   const traceRunId = search.get("trace");
@@ -70,7 +69,7 @@ export default function PRDetailPage() {
   // Reviews come newest-first; each is its own run (grouped into accordions).
   const runs = reviews ?? [];
   const allFindings: FindingRecord[] = React.useMemo(
-    () => runs.flatMap((r) => r.findings),
+    () => (reviews ?? []).flatMap((r) => r.findings),
     [reviews],
   );
   const lethalTrifecta = allFindings.filter((f) => f.kind === "lethal_trifecta");

@@ -19,3 +19,30 @@ export function relativeTime(iso: string | null | undefined): string {
   if (h < 24) return `${h}h`;
   return `${Math.round(h / 24)}d`;
 }
+
+export type PullSort = "newest" | "oldest";
+
+/** `?sort=` → a known sort (unknown/missing → newest, the default). */
+export function parsePullSort(v: string | null | undefined): PullSort {
+  return v === "oldest" ? "oldest" : "newest";
+}
+
+/**
+ * The PR list as shown: status filter ("all" = no filter), free-text match on
+ * title or number (case-insensitive), then sorted by last update.
+ */
+export function filterAndSortPulls(
+  pulls: readonly PrMeta[],
+  { status, query, sort }: { status: string; query: string; sort: PullSort },
+): PrMeta[] {
+  const q = query.trim().toLowerCase();
+  return pulls
+    .filter((p) => status === "all" || p.status === status)
+    .filter((p) => !q || p.title.toLowerCase().includes(q) || String(p.number).includes(q))
+    .slice()
+    .sort((a, b) => {
+      const ta = Date.parse(a.updated_at ?? "") || 0;
+      const tb = Date.parse(b.updated_at ?? "") || 0;
+      return sort === "oldest" ? ta - tb : tb - ta;
+    });
+}
