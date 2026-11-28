@@ -27,19 +27,28 @@ export function SkillCard({
   onDelete?: () => void;
 }) {
   const t = useTranslations("skills");
-  const stop = (e: React.MouseEvent) => e.stopPropagation();
+  const stop = (e: React.SyntheticEvent) => e.stopPropagation();
   return (
+    // The whole card is a mouse target; the keyboard / screen-reader target is the
+    // name <button> — interactive controls must not nest inside a role="button".
     <div onClick={onClick} style={s.card(!!active, skill.enabled)} data-testid={`skill-card-${skill.name}`}>
       <div style={s.headerRow}>
-        <span style={s.name} title={skill.name}>
+        <button
+          type="button"
+          style={s.name}
+          title={skill.name}
+          aria-pressed={!!active}
+          onClick={(e) => {
+            stop(e);
+            onClick?.();
+          }}
+        >
           {skill.name}
-        </span>
+        </button>
         <SkillTypeBadge type={skill.type} />
         <div style={s.actions} onClick={stop}>
           {onToggle && (
-            <span aria-label={t("card.toggleLabel")}>
-              <Toggle on={skill.enabled} onChange={onToggle} size={14} />
-            </span>
+            <Toggle on={skill.enabled} onChange={onToggle} size={14} ariaLabel={t("card.toggleLabel")} />
           )}
           {onDelete && <IconBtn icon="Trash" label={t("card.deleteLabel")} size={22} onClick={onDelete} />}
         </div>

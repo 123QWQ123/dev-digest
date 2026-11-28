@@ -50,4 +50,19 @@ describe("SkillCard", () => {
     await user.click(screen.getByText("PR Quality Rubric"));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
+
+  it("opens from the keyboard via the name button; the toggle stays a separate control", async () => {
+    const user = userEvent.setup();
+    const { onClick, onToggle } = renderCard();
+    await user.tab();
+    expect(screen.getByRole("button", { name: "PR Quality Rubric" })).toHaveFocus();
+    await user.keyboard("{Enter}");
+    expect(onClick).toHaveBeenCalledTimes(1);
+
+    await user.tab();
+    expect(screen.getByRole("switch", { name: "Enable skill" })).toHaveFocus();
+    await user.keyboard("{Enter}");
+    expect(onToggle).toHaveBeenCalledWith(false);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
 });

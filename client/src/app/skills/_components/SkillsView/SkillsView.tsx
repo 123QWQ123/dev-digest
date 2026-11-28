@@ -14,8 +14,8 @@ import { useToast } from "@/lib/toast";
 import { DETAIL_TAB_KEYS } from "./constants";
 import { filterSkills } from "./helpers";
 import { SkillCard } from "./_components/SkillCard";
-import { SkillDetail } from "./_components/SkillDetail";
-import { SkillForm, EMPTY_SKILL, type SkillFormValues } from "@/components/skills";
+import { SkillsMain } from "./_components/SkillsMain";
+import type { SkillFormValues } from "@/components/skills";
 import { ImportSkillDrawer } from "./_components/ImportSkillDrawer";
 import { s } from "./styles";
 
@@ -29,6 +29,7 @@ export function SkillsView({ selectedId }: { selectedId?: string }) {
   const update = useUpdateSkill();
   const create = useCreateSkill();
   const del = useDeleteSkill();
+  // Local on purpose (like the PR list): router.replace on every keystroke lags the input.
   const [query, setQuery] = React.useState("");
   const [creating, setCreating] = React.useState(false);
   const [importing, setImporting] = React.useState(false);
@@ -67,53 +68,6 @@ export function SkillsView({ selectedId }: { selectedId?: string }) {
     { label: t("page.crumbSkills"), href: "/skills" },
     ...(selected.data ? [{ label: selected.data.name }] : []),
   ];
-
-  const detail = () => {
-    if (creating) {
-      return (
-        <div style={s.mainScroll}>
-          <SkillForm
-            mode="create"
-            initial={EMPTY_SKILL}
-            submit={{ pending: create.isPending }}
-            onSubmit={submitCreate}
-            onCancel={() => setCreating(false)}
-          />
-        </div>
-      );
-    }
-    if (!selectedId) {
-      return (
-        <div style={s.selectPrompt}>
-          <div style={s.selectPromptTitle}>{t("page.selectPrompt.title")}</div>
-          <div style={s.selectPromptBody}>{t("page.selectPrompt.body")}</div>
-        </div>
-      );
-    }
-    if (selected.isLoading) {
-      return (
-        <div style={s.mainScroll}>
-          <Skeleton height={24} width={240} />
-          <Skeleton height={200} />
-        </div>
-      );
-    }
-    if (selected.isError || !selected.data) {
-      return (
-        <div style={s.mainScroll}>
-          <ErrorState title={t("detail.notFound.title")} body={t("detail.notFound.body")} onRetry={() => selected.refetch()} />
-        </div>
-      );
-    }
-    return (
-      <SkillDetail
-        skill={selected.data}
-        tab={tab}
-        onTab={(next) => open(selected.data!.id, next)}
-        onDeleted={() => router.push("/skills")}
-      />
-    );
-  };
 
   return (
     <AppShell crumb={crumb}>
@@ -188,7 +142,20 @@ export function SkillsView({ selectedId }: { selectedId?: string }) {
             ))}
           </div>
         </div>
-        <div style={s.main}>{detail()}</div>
+        <div style={s.main}>
+          <SkillsMain
+            create={{
+              active: creating,
+              pending: create.isPending,
+              onSubmit: submitCreate,
+              onCancel: () => setCreating(false),
+            }}
+            selectedId={selectedId}
+            selected={selected}
+            tab={tab}
+            onTab={(id, next) => (id ? open(id, next) : router.push("/skills"))}
+          />
+        </div>
       </div>
     </AppShell>
   );

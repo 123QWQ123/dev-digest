@@ -12,7 +12,11 @@ export const s = {
     marginBottom: 10,
   }),
   headerRow: { display: "flex", alignItems: "center", gap: 8, minWidth: 0 } satisfies CSSProperties,
+  /** A real <button> (keyboard / SR open target) styled as plain text. */
   name: {
+    all: "unset",
+    display: "block",
+    cursor: "pointer",
     fontSize: 13,
     fontWeight: 600,
     color: "var(--text-primary)",
