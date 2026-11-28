@@ -9,7 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button, Dropdown, EmptyState, ErrorState, Icon, Skeleton } from "@devdigest/ui";
 import { AppShell } from "@/components/app-shell";
-import { useCreateSkill, useSkill, useSkills, useUpdateSkill } from "@/lib/hooks/skills";
+import { useCreateSkill, useDeleteSkill, useSkill, useSkills, useUpdateSkill } from "@/lib/hooks/skills";
 import { useToast } from "@/lib/toast";
 import { DETAIL_TAB_KEYS } from "./constants";
 import { filterSkills } from "./helpers";
@@ -28,6 +28,7 @@ export function SkillsView({ selectedId }: { selectedId?: string }) {
   const selected = useSkill(selectedId);
   const update = useUpdateSkill();
   const create = useCreateSkill();
+  const del = useDeleteSkill();
   const [query, setQuery] = React.useState("");
   const [creating, setCreating] = React.useState(false);
   const [importing, setImporting] = React.useState(false);
@@ -49,6 +50,16 @@ export function SkillsView({ selectedId }: { selectedId?: string }) {
         },
       },
     );
+
+  const remove = (id: string, name: string) => {
+    if (!window.confirm(t("detail.deleteConfirm", { name }))) return;
+    del.mutate(id, {
+      onSuccess: () => {
+        toast.success(t("detail.deleted"));
+        if (id === selectedId) router.push("/skills");
+      },
+    });
+  };
 
   const list = filterSkills(skills ?? [], query);
   const crumb = [
@@ -73,8 +84,9 @@ export function SkillsView({ selectedId }: { selectedId?: string }) {
     }
     if (!selectedId) {
       return (
-        <div style={s.mainScroll}>
-          <EmptyState icon="Sparkles" title={t("page.selectPrompt.title")} body={t("page.selectPrompt.body")} />
+        <div style={s.selectPrompt}>
+          <div style={s.selectPromptTitle}>{t("page.selectPrompt.title")}</div>
+          <div style={s.selectPromptBody}>{t("page.selectPrompt.body")}</div>
         </div>
       );
     }
@@ -171,6 +183,7 @@ export function SkillsView({ selectedId }: { selectedId?: string }) {
                 active={sk.id === selectedId && !creating}
                 onClick={() => open(sk.id)}
                 onToggle={(enabled) => update.mutate({ id: sk.id, patch: { enabled } })}
+                onDelete={() => remove(sk.id, sk.name)}
               />
             ))}
           </div>

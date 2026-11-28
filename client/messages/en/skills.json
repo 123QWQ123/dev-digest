@@ -18,15 +18,16 @@
     "noMatch": "No skills match your search.",
     "selectPrompt": {
       "title": "Select a skill",
-      "body": "Pick a skill on the left to edit it, preview it or browse its versions."
+      "body": "Pick a skill on the left to preview its body."
     }
   },
   "card": {
-    "agents": "{count, plural, =0 {not used} one {# agent} other {# agents}}",
+    "agents": "{count, plural, one {# agent} other {# agents}}",
     "toggleLabel": "Enable skill",
-    "pull": "{value} pull",
+    "pull": "{value} pull freq",
     "accept": "{value} accept",
-    "statsHint": "Last 30 days: share of linked agents' runs that used this skill, and accept rate of their triaged findings."
+    "statsHint": "Last 30 days: share of linked agents' runs that used this skill, and accept rate of their triaged findings.",
+    "deleteLabel": "Delete skill"
   },
   "detail": {
     "loadError": "Could not load this skill.",
