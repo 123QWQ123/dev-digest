@@ -84,7 +84,7 @@ d('M2 skills (Testcontainers pg)', () => {
     const created = await app.inject({ method: 'POST', url: '/skills', payload: body('crud-skill') });
     expect(created.statusCode).toBe(201);
     const skill = created.json();
-    expect(skill).toMatchObject({ version: 1, source: 'manual', enabled: true, agent_count: 0 });
+    expect(skill).toMatchObject({ version: 1, source: 'manual', enabled: true, agent_count: 0, agent_names: [] });
 
     const dup = await app.inject({ method: 'POST', url: '/skills', payload: body('crud-skill') });
     expect(dup.statusCode).toBe(409);
@@ -194,6 +194,18 @@ d('M2 skills (Testcontainers pg)', () => {
       ['link-b', true],
       ['link-a', false],
     ]);
+
+    // Only a ticked link counts as "connected" (matches the agent card's skill_count).
+    const listed = (await app.inject({ method: 'GET', url: '/skills' })).json() as Array<{
+      id: string;
+      agent_count: number;
+      agent_names: string[];
+    }>;
+    expect(listed.find((s) => s.id === b.id)).toMatchObject({
+      agent_count: 1,
+      agent_names: ['Linker'],
+    });
+    expect(listed.find((s) => s.id === a.id)).toMatchObject({ agent_count: 0, agent_names: [] });
 
     const [otherWs] = await pg.handle.db.insert(t.workspaces).values({ name: 'other' }).returning();
     const [foreign] = await pg.handle.db

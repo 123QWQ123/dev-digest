@@ -23,6 +23,7 @@
   },
   "card": {
     "agents": "{count, plural, one {# agent} other {# agents}}",
+    "agentsHint": "{count, plural, =0 {Not linked to any agent yet} one {Linked to # agent:} other {Linked to # agents:}}",
     "toggleLabel": "Enable skill",
     "pull": "{value} pull freq",
     "accept": "{value} accept",

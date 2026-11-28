@@ -16,6 +16,7 @@ const SKILL = {
   enabled: true,
   version: 11,
   agent_count: 1,
+  agent_names: ["Test Quality Reviewer"],
   stats: { pull_rate: 0.07, accept_rate: null },
 } as Skill;
 
@@ -39,6 +40,12 @@ describe("SkillCard", () => {
     expect(screen.getByText("rubric")).toBeInTheDocument();
     expect(screen.getByText("Manual · v11")).toBeInTheDocument();
     expect(screen.getByText("1 agent")).toBeInTheDocument();
+    // The agents chip has its own tooltip — not the pull/accept stats hint.
+    expect(screen.getByText("1 agent").closest("span")).toHaveAttribute(
+      "title",
+      "Linked to 1 agent:\nTest Quality Reviewer",
+    );
+    expect(screen.getByText("7% pull freq").parentElement).toHaveAttribute("title", messages.card.statsHint);
     expect(screen.getByText("7% pull freq")).toBeInTheDocument();
     expect(screen.getByText("— accept")).toBeInTheDocument();
 

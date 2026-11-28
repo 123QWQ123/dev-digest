@@ -15,7 +15,7 @@ import type {
 
 /** Pure helpers for the skills module — DB row ⇄ DTO mapping and the version-bump rule. */
 
-export function toSkillDto(row: SkillRow & { agentCount?: number }): Skill {
+export function toSkillDto(row: SkillRow & { agentNames?: string[] }): Skill {
   return {
     id: row.id,
     name: row.name,
@@ -26,7 +26,9 @@ export function toSkillDto(row: SkillRow & { agentCount?: number }): Skill {
     enabled: row.enabled,
     version: row.version,
     evidence_files: row.evidenceFiles ?? null,
-    ...(row.agentCount !== undefined ? { agent_count: row.agentCount } : {}),
+    ...(row.agentNames !== undefined
+      ? { agent_count: row.agentNames.length, agent_names: row.agentNames }
+      : {}),
     updated_at: row.updatedAt.toISOString(),
   };
 }

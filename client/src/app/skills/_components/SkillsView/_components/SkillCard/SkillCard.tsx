@@ -1,5 +1,5 @@
 /* SkillCard — name + type badge + enabled toggle + delete, description,
-   "source · vN", and a usage footer (agents chip, pull freq, accept rate). */
+   "source · vN", and a usage footer (agents chip with linked agent names on hover, pull freq, accept rate). */
 "use client";
 
 import React from "react";
@@ -28,6 +28,9 @@ export function SkillCard({
 }) {
   const t = useTranslations("skills");
   const stop = (e: React.SyntheticEvent) => e.stopPropagation();
+  const agentCount = skill.agent_count ?? 0;
+  // Native tooltip: the count line, then one agent name per line.
+  const agentsHint = [t("card.agentsHint", { count: agentCount }), ...(skill.agent_names ?? [])].join("\n");
   return (
     // The whole card is a mouse target; the keyboard / screen-reader target is the
     // name <button> — interactive controls must not nest inside a role="button".
@@ -57,13 +60,15 @@ export function SkillCard({
       <div style={s.meta}>
         {t(`source.${skill.source}`)} · v{skill.version}
       </div>
-      <div style={s.footer} title={t("card.statsHint")}>
-        <span style={s.agentsChip}>
+      <div style={s.footer}>
+        <span style={s.agentsChip} title={agentsHint}>
           <Icon.Cpu size={12} />
-          {t("card.agents", { count: skill.agent_count ?? 0 })}
+          {t("card.agents", { count: agentCount })}
         </span>
-        <span>{t("card.pull", { value: rate(skill.stats?.pull_rate) })}</span>
-        <span>{t("card.accept", { value: rate(skill.stats?.accept_rate) })}</span>
+        <span style={s.stats} title={t("card.statsHint")}>
+          <span>{t("card.pull", { value: rate(skill.stats?.pull_rate) })}</span>
+          <span>{t("card.accept", { value: rate(skill.stats?.accept_rate) })}</span>
+        </span>
       </div>
     </div>
   );

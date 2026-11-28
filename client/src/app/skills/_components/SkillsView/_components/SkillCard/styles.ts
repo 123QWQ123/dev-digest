@@ -44,6 +44,7 @@ export const s = {
     alignItems: "center",
     gap: 8,
   } satisfies CSSProperties,
+  stats: { display: "inline-flex", alignItems: "center", gap: 8 } satisfies CSSProperties,
   agentsChip: {
     display: "inline-flex",
     alignItems: "center",

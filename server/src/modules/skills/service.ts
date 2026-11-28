@@ -75,7 +75,7 @@ export class SkillsService {
         note: input.note ?? (input.source === 'imported' ? 'Imported' : 'Initial version'),
       }),
     );
-    return toSkillDto({ ...row, agentCount: 0 });
+    return toSkillDto({ ...row, agentNames: [] });
   }
 
   /**
@@ -97,7 +97,7 @@ export class SkillsService {
         note: 'Extracted from repo conventions',
       }),
     );
-    return toSkillDto({ ...row, agentCount: 0 });
+    return toSkillDto({ ...row, agentNames: [] });
   }
 
   async update(
@@ -112,7 +112,7 @@ export class SkillsService {
     const row = await this.guardDuplicate(() =>
       this.repo.update(workspaceId, id, fields, { bumpVersion, note: note ?? null }),
     );
-    return row ? toSkillDto({ ...row, agentCount: existing.agentCount }) : undefined;
+    return row ? toSkillDto({ ...row, agentNames: existing.agentNames }) : undefined;
   }
 
   async delete(workspaceId: string, id: string): Promise<boolean> {
@@ -156,7 +156,7 @@ export class SkillsService {
         note: `Restored from v${version}`,
       }),
     );
-    return row ? toSkillDto({ ...row, agentCount: existing.agentCount }) : undefined;
+    return row ? toSkillDto({ ...row, agentNames: existing.agentNames }) : undefined;
   }
 
   /** Parse an uploaded .md/.zip into a preview. Persists nothing. */

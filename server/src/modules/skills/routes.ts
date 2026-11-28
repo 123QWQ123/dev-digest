@@ -23,7 +23,7 @@ const VersionParams = z.object({
 
 /**
  * M2 — skills module.
- *   GET    /skills                               → list (+ agent_count)
+ *   GET    /skills                               → list (+ agent_count, agent_names)
  *   GET    /skills/:id                           → one skill
  *   POST   /skills                               → create (v1)
  *   PUT    /skills/:id                           → update (content change → new version)

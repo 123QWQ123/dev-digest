@@ -129,8 +129,10 @@ export const Skill = z.object({
   enabled: z.boolean(),
   version: z.number().int(),
   evidence_files: z.array(z.string()).nullish(),
-  /** Number of agents linking this skill (any link state). Absent on nested payloads. */
+  /** Number of agents that have this skill ticked (unticked links excluded). Absent on nested payloads. */
   agent_count: z.number().int().optional(),
+  /** Names of those agents, sorted. Present whenever `agent_count` is. */
+  agent_names: z.array(z.string()).optional(),
   updated_at: z.string().optional(),
   /** 30-day usage summary for the list card (absent on nested payloads). */
   stats: z

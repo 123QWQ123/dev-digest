@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import type { Db } from '../../db/client.js';
 import * as t from '../../db/schema.js';
 import type { SkillRow, SkillVersionRow } from '../../db/rows.js';
@@ -10,7 +10,7 @@ export type { SkillRow, SkillVersionRow };
 /**
  * M2 — skills data-access. Owns `skills` and `skill_versions`. The agent side of
  * the `agent_skills` link table (link/enable/order) belongs to the agents
- * repository; here it is only read to count usages. Workspace-scoped throughout.
+ * repository; here it is only read to list the linking agents. Workspace-scoped throughout.
  */
 
 export interface InsertSkill {
@@ -33,8 +33,13 @@ export interface SkillContent {
   body?: string;
 }
 
+/**
+ * A skill with the names of the agents that have it ticked (`agent_skills.enabled`),
+ * sorted by name. An unticked link is "not connected" — same as the agent card's
+ * `skill_count`; the skill's own global toggle is shown separately, so it isn't filtered here.
+ */
 export interface SkillWithCount extends SkillRow {
-  agentCount: number;
+  agentNames: string[];
 }
 
 /** Thrown when (workspace_id, name) is already taken. The service maps it to 409. */
@@ -71,25 +76,39 @@ type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
 export class SkillsRepository {
   constructor(private db: Db) {}
 
+  /** `array_agg` over a LEFT JOIN yields `{NULL}` for an unlinked skill — FILTER drops it. */
+  private agentNamesCol = sql<string[]>`coalesce(
+    array_agg(${t.agents.name} order by ${t.agents.name}) filter (where ${t.agents.id} is not null),
+    '{}'
+  )`;
+
   async list(workspaceId: string): Promise<SkillWithCount[]> {
     const rows = await this.db
-      .select({ skill: t.skills, agentCount: count(t.agentSkills.agentId) })
+      .select({ skill: t.skills, agentNames: this.agentNamesCol })
       .from(t.skills)
-      .leftJoin(t.agentSkills, eq(t.agentSkills.skillId, t.skills.id))
+      .leftJoin(
+        t.agentSkills,
+        and(eq(t.agentSkills.skillId, t.skills.id), eq(t.agentSkills.enabled, true)),
+      )
+      .leftJoin(t.agents, eq(t.agents.id, t.agentSkills.agentId))
       .where(eq(t.skills.workspaceId, workspaceId))
       .groupBy(t.skills.id)
       .orderBy(asc(t.skills.name));
-    return rows.map((r) => ({ ...r.skill, agentCount: Number(r.agentCount) }));
+    return rows.map((r) => ({ ...r.skill, agentNames: r.agentNames }));
   }
 
   async getById(workspaceId: string, id: string): Promise<SkillWithCount | undefined> {
     const [row] = await this.db
-      .select({ skill: t.skills, agentCount: count(t.agentSkills.agentId) })
+      .select({ skill: t.skills, agentNames: this.agentNamesCol })
       .from(t.skills)
-      .leftJoin(t.agentSkills, eq(t.agentSkills.skillId, t.skills.id))
+      .leftJoin(
+        t.agentSkills,
+        and(eq(t.agentSkills.skillId, t.skills.id), eq(t.agentSkills.enabled, true)),
+      )
+      .leftJoin(t.agents, eq(t.agents.id, t.agentSkills.agentId))
       .where(and(eq(t.skills.workspaceId, workspaceId), eq(t.skills.id, id)))
       .groupBy(t.skills.id);
-    return row ? { ...row.skill, agentCount: Number(row.agentCount) } : undefined;
+    return row ? { ...row.skill, agentNames: row.agentNames } : undefined;
   }
 
   /** Insert a skill AND its v1 snapshot, atomically. */

@@ -9,6 +9,7 @@
 
 ## What Doesn't Work
 - 2026-11-24 · Fire-and-forget `jobs.enqueue()` without a rejection handler crashed the API on a failed job (e.g. clone of a non-existent repo) — `done.catch(() => {})` in `JobRunner.enqueue`; failure is already persisted on the `jobs` row (`src/platform/jobs.ts:104`)
+- 2026-11-28 · `npx prettier --write` on server files reformats far beyond the edit (skills module: 270 → 549 changed lines, a 444-line test diff) — server has no prettier config/devDep, so the default style (80 cols, other quotes) fights the hand-kept 100-col style. Don't run it; format edits by hand and check `git diff --stat` (`server/package.json`)
 
 ## Codebase Patterns
 - 2026-11-24 · Run cost: `agent_runs.cost_usd` NULL = unknown (pre-M1 run, failed/cancelled, unpriced model) vs `0` = known free model — never coalesce to 0; the UI renders NULL as "—". PR-list COST = newest DONE run per agent, summed via the pure `latestRoundCost` (rows must be newest-first) (`src/modules/pulls/status.ts:72`)
@@ -40,6 +41,8 @@
 - 2026-11-27 · M2 Skills: `skills` module (CRUD, append-only versions + restore, `.md/.zip` import preview via fflate, in memory), `PUT /agents/:id/skills` transactional + workspace-guarded, migration 0011, Test Quality Reviewer + 3 seeded skills (`specs/m2-skills.md`)
 - 2026-11-27 · M2 stats: `run_skills` table (migration 0012) written by the executor; `GET /skills/:id/stats`, `GET /agents/:id/stats` (M7 contract), card `stats` on list endpoints, `POST /tokens/count` (tokens module) for the editors
 - 2026-11-28 · M2 Conventions Extractor: `conventions` module (sample by code → 1 structured call → pure `domain/verify.ts` grounding → replace non-accepted rows), migration 0014 (evidence lines, created_at), in-process per-repo 409 lock, `POST /repos/:id/conventions/skill` → `convention`/`extracted` skill (`specs/m2-conventions.md`)
+- 2026-11-28 · Skill card tooltip: `Skill.agent_names` (sorted, any link state) next to `agent_count`, via `array_agg … FILTER (WHERE agents.id IS NOT NULL)` over the LEFT JOIN (`src/modules/skills/repository.ts:76`)
+- 2026-11-28 · Supersedes the tooltip note above ("any link state"): `agent_count`/`agent_names` now count only ticked links (`agent_skills.enabled = true`) — the user saw a skill still "connected" to an agent whose card said 0 skills. Agent `skill_count` additionally drops globally-disabled skills; the skill card doesn't, since its own toggle shows that (`src/modules/skills/repository.ts:76`)
 
 ## Open Questions
 - 2026-11-28 · `skills.it.test.ts` "a review renders only effective skills…" failed once in a full `pnpm test` with `trace.prompt_assembly` undefined (`:305`), passed in isolation and on rerun — likely the trace read races the run under parallel testcontainers load; `waitForPrRuns` returning `done` may precede the trace write (`test/skills.it.test.ts:305`)
