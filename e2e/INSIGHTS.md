@@ -14,6 +14,7 @@
 - 2026-11-27 · A flow must `wait --text <row title>` before `find text <row title> click`: `wait --url /pulls` fires before the PR list has fetched, so 04/05 failed on every run (also on untouched HEAD) with `find text … click` — added the wait like 02 has (`specs/04-pr-findings.flow.json`)
 
 ## Tool & Library Notes
+- 2026-11-28 · `find text X click` clicks the FIRST DOM match and fails instantly ("is not visible, so the click would not reach it") if that match is hidden. next-intl serializes ALL `messages/en/*.json` into an invisible RSC `<script>` (`self.__next_f.push`), so any text that is also a message string (e.g. skills `form.namePlaceholder: "branch-coverage-gate"`) can be hit there — 08 failed in CI (fresh seed / CI DOM order) but passed locally. Click cards via `find testid <data-testid> click` instead (`specs/08-skills.flow.json`)
 - 2026-11-27 · `agent-browser wait --text` matches rendered text, so a label styled `text-transform: uppercase` (Stats tiles/panel titles) never matches its source string — wait on a non-transformed text (footnote, row name) instead (`specs/08-skills.flow.json`)
 
 ## Recurring Errors & Fixes

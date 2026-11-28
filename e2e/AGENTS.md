@@ -14,7 +14,8 @@
 
 ## Gotchas
 - Assertions = `wait --text` / `wait --url` (non-zero exit on timeout) + optional `assert.stdoutIncludes`.
-- Deterministic locators only (`--url`, `--text`, `find role|text|label`). Never the AI `chat` command.
+- Deterministic locators only (`--url`, `--text`, `find role|text|label|testid`). Never the AI `chat` command.
+  Click text that is also an i18n message string via `find testid` (see INSIGHTS: hidden RSC `<script>`).
 - Flows read seeded data only: repo `acme/payments-api`, PR #482, built-in agents. No LLM calls, no keys.
 - Flows 02/04/05 assume the seeded repo is the ONLY repo → fail on a normal dev DB.
 - `{BASE}` in commands is replaced with `E2E_BASE_URL`.

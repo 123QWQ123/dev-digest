@@ -36,11 +36,11 @@
     {
       "cmd": [
         "find",
-        "text",
-        "branch-coverage-gate",
+        "testid",
+        "skill-card-branch-coverage-gate",
         "click"
       ],
-      "label": "open the skill"
+      "label": "open the skill (by testid: the name is also the i18n namePlaceholder, serialized into an invisible RSC <script> that `find text` can hit first)"
     },
     {
       "cmd": [

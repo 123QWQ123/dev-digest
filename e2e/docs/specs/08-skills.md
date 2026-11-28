@@ -10,7 +10,7 @@ config, then opens the Test Quality Reviewer agent and sees its linked skills on
 
 ## Steps
 1. Open `{BASE}/skills` and wait for `branch-coverage-gate`.
-2. Click `branch-coverage-gate` and wait for its Config form ("Skill body").
+2. Click the `branch-coverage-gate` card (`find testid skill-card-branch-coverage-gate` — its name is also an i18n placeholder, so `find text` may hit a hidden RSC script) and wait for its Config form ("Skill body").
 3. Click the `Stats` tab and wait for its footnote and the `Test Quality Reviewer` row (tile labels are CSS-uppercased, so `wait --text` cannot match their source text).
 4. Open `{BASE}/agents`, wait for `Test Quality Reviewer` and click it.
 5. Click the `Skills` tab.
