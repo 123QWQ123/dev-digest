@@ -76,8 +76,9 @@ describe("SkillsTab", () => {
   it("shows the effective count and saves a reorder via ↑", async () => {
     const user = userEvent.setup();
     renderTab();
-    expect(screen.getByText("1 of 4 enabled")).toBeInTheDocument();
-    expect(screen.getByText("disabled globally")).toBeInTheDocument();
+    expect(screen.getByText("1 of 3 enabled")).toBeInTheDocument();
+    // gamma is disabled globally → hidden, yet its link is kept in the saved set
+    expect(screen.queryByTestId("skill-row-gamma")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Move alpha up" }));
     expect(mutate).toHaveBeenCalledTimes(1);
@@ -93,7 +94,8 @@ describe("SkillsTab", () => {
     renderTab();
     const deltaRow = screen.getByTestId("skill-row-delta");
     await user.click(deltaRow.querySelector('[role="checkbox"]')!);
-    expect(sentItems().map((i) => i.skill_id)).toEqual(["s2", "s1", "s3", "s4"]);
+    // the hidden (globally disabled) link rides along after the visible ones
+    expect(sentItems().map((i) => i.skill_id)).toEqual(["s2", "s1", "s4", "s3"]);
   });
 
   it("hides reorder controls while filtering", async () => {

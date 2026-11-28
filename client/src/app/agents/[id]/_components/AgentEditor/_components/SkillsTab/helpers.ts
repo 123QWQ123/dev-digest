@@ -42,6 +42,17 @@ export function buildRows(links: AgentSkill[], skills: Skill[]): SkillRow[] {
   return [...linked, ...rest];
 }
 
+/**
+ * Globally disabled skills are hidden from the tab, but their links are kept: the
+ * PUT replaces the whole set, so hidden links ride along after the visible ones.
+ */
+export function splitByGlobalSwitch(rows: SkillRow[]): { shown: SkillRow[]; hiddenLinks: SkillRow[] } {
+  return {
+    shown: rows.filter((r) => r.skill_enabled),
+    hiddenLinks: rows.filter((r) => !r.skill_enabled && r.linked),
+  };
+}
+
 /** The linked part of the rows, as the agent's ordered link set. */
 export function toLinks(rows: SkillRow[]): AgentSkill[] {
   return rows

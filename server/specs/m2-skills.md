@@ -32,14 +32,14 @@ The DB is the source of truth. Enabled skills are rendered into the review promp
 | GET | `/skills` | Workspace skills with `agent_count`, sorted by name |
 | GET | `/skills/:id` | One skill; 404 if it is in another workspace |
 | POST | `/skills` | Create the skill and snapshot v1. Duplicate name → 409 |
-| PUT | `/skills/:id` | Any change to name, description, type or body → `version+1` plus a snapshot with an optional `note`. Toggling `enabled` alone creates no version |
+| PUT | `/skills/:id` | Any change to name, description, type or body → `version+1` plus a snapshot with an optional `note`. Toggling `enabled` alone creates no version. It does not touch per-agent ticks: while off the skill is out of every agent's effective set, and re-enabling makes it active again wherever it was ticked |
 | DELETE | `/skills/:id` | Agent links are removed by cascade |
 | GET | `/skills/:id/stats` | `SkillStats` over 30 days: `used_by` agents, `pull_rate`, `accept_rate`, `findings`, `findings_by_category` |
 | GET | `/agents/:id/stats` | The M7 `AgentStats` contract over 30 days (runs, accept/dismiss, cost, latency, severity split, score trend) |
 | POST | `/tokens/count` | `{text}` → `{tokens}` with the trace tokenizer (cl100k); text ≤ 100 000 chars |
 | GET | `/skills/:id/versions` | Newest first |
 | GET | `/skills/:id/versions/:version` | One snapshot |
-| POST | `/skills/:id/versions/:version/restore` | Writes a **new** version with the old content; history is never rewritten |
+| POST | `/skills/:id/versions/:version/restore` | Switches the skill to that snapshot (content + `version`); **no** new version is written. The next content edit takes the next free number (max + 1) |
 | POST | `/skills/import/preview` | `{filename, content_base64}` → `SkillImportPreview`. **Persists nothing** |
 | GET | `/agents/:id/skills` | `AgentSkill[]`: linked skills in order, with link `enabled` and `skill_enabled` |
 | PUT | `/agents/:id/skills` | `{items:[{skill_id, enabled}]}`. Array order becomes the link order. The full set is replaced in one transaction. Any skill outside the workspace → 422 |

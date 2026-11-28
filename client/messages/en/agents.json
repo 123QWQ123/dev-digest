@@ -102,7 +102,6 @@
     "moveUp": "Move {name} up",
     "moveDown": "Move {name} down",
     "dragHandle": "Drag to reorder {name}",
-    "globallyDisabled": "disabled globally",
     "loadError": "Could not load this agent's skills."
   },
   "mount": {

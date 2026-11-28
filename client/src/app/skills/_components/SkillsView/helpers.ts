@@ -20,8 +20,9 @@ export type DiffLine = { kind: "same" | "add" | "del"; text: string };
 
 /** Minimal line diff (LCS). Skill bodies are small (≤ 20k chars), so O(n·m) is fine. */
 export function lineDiff(before: string, after: string): DiffLine[] {
-  const a = before.split("\n");
-  const b = after.split("\n");
+  // An empty text has no lines ("".split gives [""], which would show a phantom "- ").
+  const a = before === "" ? [] : before.split("\n");
+  const b = after === "" ? [] : after.split("\n");
   const dp: number[][] = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
   for (let i = a.length - 1; i >= 0; i--) {
     for (let j = b.length - 1; j >= 0; j--) {

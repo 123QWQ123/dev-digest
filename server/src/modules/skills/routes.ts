@@ -31,7 +31,7 @@ const VersionParams = z.object({
  *   GET    /skills/:id/stats                     → 30-day usage (pull/accept rate, findings)
  *   GET    /skills/:id/versions                  → history, newest first
  *   GET    /skills/:id/versions/:version         → one snapshot
- *   POST   /skills/:id/versions/:version/restore → new version with the old content
+ *   POST   /skills/:id/versions/:version/restore → switch to that snapshot (no new version)
  *   POST   /skills/import/preview                → parse .md/.zip, persist nothing
  */
 export default async function skillsRoutes(appBase: FastifyInstance) {

@@ -117,7 +117,22 @@ d('M2 skills (Testcontainers pg)', () => {
     const restored = (
       await app.inject({ method: 'POST', url: `/skills/${skill.id}/versions/1/restore` })
     ).json();
-    expect(restored).toMatchObject({ version: 3, body: '# crud-skill\n\nRULE-crud-skill' });
+    // Restore switches to the snapshot — no new history entry.
+    expect(restored).toMatchObject({ version: 1, body: '# crud-skill\n\nRULE-crud-skill' });
+    const afterRestore = (
+      await app.inject({ method: 'GET', url: `/skills/${skill.id}/versions` })
+    ).json();
+    expect(afterRestore.map((v: { version: number }) => v.version)).toEqual([2, 1]);
+
+    // The next edit takes the next FREE number (v3), not current + 1 (v2 is taken).
+    const reEdited = (
+      await app.inject({ method: 'PUT', url: `/skills/${skill.id}`, payload: { body: 'THIRD' } })
+    ).json();
+    expect(reEdited).toMatchObject({ version: 3, body: 'THIRD' });
+    const v2 = (
+      await app.inject({ method: 'GET', url: `/skills/${skill.id}/versions/2` })
+    ).json();
+    expect(v2.body).toBe('NEW BODY');
 
     const missing = await app.inject({ method: 'POST', url: `/skills/${skill.id}/versions/99/restore` });
     expect(missing.statusCode).toBe(404);
@@ -206,6 +221,23 @@ d('M2 skills (Testcontainers pg)', () => {
       agent_names: ['Linker'],
     });
     expect(listed.find((s) => s.id === a.id)).toMatchObject({ agent_count: 0, agent_names: [] });
+
+    // A global off/on keeps the per-agent tick: while off the skill leaves the agent's
+    // effective set (skill_count), and once back on it is active again where it was ticked.
+    const linkB = async () =>
+      ((await app.inject({ method: 'GET', url: `/agents/${agent.id}/skills` })).json() as Array<{
+        name: string;
+        enabled: boolean;
+        skill_enabled: boolean;
+      }>).find((l) => l.name === 'link-b');
+    const skillCount = async () =>
+      (await app.inject({ method: 'GET', url: `/agents/${agent.id}` })).json().skill_count;
+    await app.inject({ method: 'PUT', url: `/skills/${b.id}`, payload: { enabled: false } });
+    expect(await linkB()).toMatchObject({ enabled: true, skill_enabled: false });
+    expect(await skillCount()).toBe(0);
+    await app.inject({ method: 'PUT', url: `/skills/${b.id}`, payload: { enabled: true } });
+    expect(await linkB()).toMatchObject({ enabled: true, skill_enabled: true });
+    expect(await skillCount()).toBe(1);
 
     const [otherWs] = await pg.handle.db.insert(t.workspaces).values({ name: 'other' }).returning();
     const [foreign] = await pg.handle.db

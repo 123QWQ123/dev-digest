@@ -135,27 +135,18 @@ export class SkillsService {
   }
 
   /**
-   * Restore = a NEW version carrying the old snapshot's content. History is
-   * append-only, so past eval/trace references to a version stay valid.
+   * Restore = switch the skill to an existing snapshot (content + version number).
+   * Nothing is appended, so the history list doesn't grow; snapshots are immutable,
+   * so past eval/trace references to a version stay valid. The next content edit
+   * takes the next free version number.
    */
   async restore(workspaceId: string, id: string, version: number): Promise<Skill | undefined> {
     const existing = await this.repo.getById(workspaceId, id);
     if (!existing) return undefined;
     const snap = await this.repo.getVersion(id, version);
     if (!snap) return undefined;
-    const content = {
-      body: snap.body,
-      name: snap.name,
-      description: snap.description,
-      type: snap.type,
-    };
-    if (!isContentChange(existing, content)) return toSkillDto(existing);
-    const row = await this.guardDuplicate(() =>
-      this.repo.update(workspaceId, id, content, {
-        bumpVersion: true,
-        note: `Restored from v${version}`,
-      }),
-    );
+    if (existing.version === version) return toSkillDto(existing);
+    const row = await this.guardDuplicate(() => this.repo.switchToVersion(workspaceId, id, snap));
     return row ? toSkillDto({ ...row, agentNames: existing.agentNames }) : undefined;
   }
 

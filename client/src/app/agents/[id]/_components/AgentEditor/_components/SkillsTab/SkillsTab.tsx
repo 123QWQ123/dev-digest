@@ -11,6 +11,7 @@ import {
   effectiveCount,
   matchesFilter,
   moveRow,
+  splitByGlobalSwitch,
   toggleRow,
   toLinks,
   type SkillRow,
@@ -20,7 +21,8 @@ import { s } from "./styles";
 /**
  * Skills tab — attach / enable / reorder workspace skills for one agent.
  * Linked skills come first, in prompt order; every change is saved at once
- * (optimistic). Reorder by native drag-and-drop or the ↑/↓ buttons.
+ * (optimistic). Reorder by native drag-and-drop or the ↑/↓ buttons. Skills
+ * disabled globally are not shown (and can't be ticked).
  */
 export function SkillsTab({ agentId }: { agentId: string }) {
   const t = useTranslations("agents");
@@ -51,12 +53,12 @@ export function SkillsTab({ agentId }: { agentId: string }) {
     );
   }
 
-  const rows = buildRows(links.data ?? [], skills.data ?? []);
+  const { shown: rows, hiddenLinks } = splitByGlobalSwitch(buildRows(links.data ?? [], skills.data ?? []));
   const linkedRows = rows.filter((r) => r.linked);
   const reorderable = filter.trim() === "";
 
   const commit = (next: SkillRow[]) => {
-    const optimistic = toLinks(next);
+    const optimistic = toLinks([...next, ...hiddenLinks]);
     // Failures surface via the global mutation error toast; the hook rolls back.
     setLinks.mutate({
       items: optimistic.map((l) => ({ skill_id: l.skill_id, enabled: l.enabled })),
@@ -156,15 +158,12 @@ export function SkillsTab({ agentId }: { agentId: string }) {
                   checked={row.linked && row.enabled}
                   onChange={() => commit(toggleRow(rows, row.skill_id))}
                   label={
-                    <span className="mono" style={s.name(!row.skill_enabled)}>
+                    <span className="mono" style={s.name}>
                       {row.name}
                     </span>
                   }
                 />
                 <span style={s.desc}>{row.description}</span>
-                {!row.skill_enabled && (
-                  <Badge color="var(--text-muted)">{t("skills.globallyDisabled")}</Badge>
-                )}
                 <SkillTypeBadge type={row.type} />
               </div>
             </React.Fragment>

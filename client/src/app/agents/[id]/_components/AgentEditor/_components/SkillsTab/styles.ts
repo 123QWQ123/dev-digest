@@ -45,11 +45,11 @@ export const s = {
     color: "var(--text-muted)",
     cursor: "pointer",
   } satisfies CSSProperties,
-  name: (muted: boolean): CSSProperties => ({
+  name: {
     fontSize: 13,
     fontWeight: 600,
-    color: muted ? "var(--text-muted)" : "var(--text-primary)",
-  }),
+    color: "var(--text-primary)",
+  } satisfies CSSProperties,
   desc: {
     flex: 1,
     minWidth: 0,

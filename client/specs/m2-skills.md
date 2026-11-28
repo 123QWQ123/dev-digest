@@ -29,7 +29,7 @@ The backend is described in `server/specs/m2-skills.md`.
 4. **Agent editor → Skills tab**:
    - Header "N of M enabled", a filter, and the order hint.
    - Rows: drag handle, ↑/↓ buttons, checkbox, name, type badge. A skill that is disabled
-     globally shows as muted.
+     globally is not listed; its link and tick are kept, so it is active again once re-enabled.
    - Linked skills come first, in order; unlinked skills follow.
    - Ticking a checkbox links the skill (enabled); unticking keeps the link but disables it.
      Every change saves immediately.

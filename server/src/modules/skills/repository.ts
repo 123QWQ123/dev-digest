@@ -10,7 +10,9 @@ export type { SkillRow, SkillVersionRow };
 /**
  * M2 — skills data-access. Owns `skills` and `skill_versions`. The agent side of
  * the `agent_skills` link table (link/enable/order) belongs to the agents
- * repository; here it is only read to list the linking agents. Workspace-scoped throughout.
+ * repository; here it is only read to list the linking agents. Disabling a skill
+ * globally leaves the per-agent ticks alone, so re-enabling brings them back.
+ * Workspace-scoped throughout.
  */
 
 export interface InsertSkill {
@@ -139,8 +141,10 @@ export class SkillsRepository {
   }
 
   /**
-   * Update a skill. When `bumpVersion` is set the version increments and the new
-   * content is snapshotted into skill_versions in the same transaction.
+   * Update a skill. When `bumpVersion` is set the skill gets the NEXT FREE version
+   * number (max snapshot + 1, not current + 1: after a restore the current version
+   * can sit below the newest snapshot) and the new content is snapshotted into
+   * skill_versions in the same transaction.
    */
   async update(
     workspaceId: string,
@@ -158,7 +162,12 @@ export class SkillsRepository {
             ...(patch.type !== undefined ? { type: patch.type } : {}),
             ...(patch.body !== undefined ? { body: patch.body } : {}),
             ...(patch.enabled !== undefined ? { enabled: patch.enabled } : {}),
-            ...(opts.bumpVersion ? { version: sql`${t.skills.version} + 1` } : {}),
+            ...(opts.bumpVersion
+              ? {
+                  version: sql`(SELECT coalesce(max(${t.skillVersions.version}), 0) + 1
+                    FROM ${t.skillVersions} WHERE ${t.skillVersions.skillId} = ${id})`,
+                }
+              : {}),
             updatedAt: new Date(),
           })
           .where(and(eq(t.skills.workspaceId, workspaceId), eq(t.skills.id, id)))
@@ -168,6 +177,35 @@ export class SkillsRepository {
       });
     } catch (err) {
       if (isUniqueViolation(err)) throw new DuplicateSkillNameError(patch.name ?? '');
+      throw err;
+    }
+  }
+
+  /**
+   * Restore = point the skill at an existing snapshot: copy its content and set
+   * `version` to it. No new snapshot is written — history stays as it was.
+   */
+  async switchToVersion(
+    workspaceId: string,
+    id: string,
+    snap: SkillVersionRow,
+  ): Promise<SkillRow | undefined> {
+    try {
+      const [row] = await this.db
+        .update(t.skills)
+        .set({
+          name: snap.name,
+          description: snap.description,
+          type: snap.type,
+          body: snap.body,
+          version: snap.version,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(t.skills.workspaceId, workspaceId), eq(t.skills.id, id)))
+        .returning();
+      return row;
+    } catch (err) {
+      if (isUniqueViolation(err)) throw new DuplicateSkillNameError(snap.name);
       throw err;
     }
   }
