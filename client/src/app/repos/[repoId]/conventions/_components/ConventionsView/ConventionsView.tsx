@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useFormatter, useTranslations } from "next-intl";
-import { Button, EmptyState, ErrorState, Skeleton } from "@devdigest/ui";
+import { Button } from "@devdigest/ui";
 import type { ConventionCandidate } from "@devdigest/shared";
 import {
   useConventions,
@@ -11,10 +11,10 @@ import {
 } from "@/lib/hooks/conventions";
 import { useToast } from "@/lib/toast";
 import { formatCost } from "@/components/run-cost";
-import { SKELETON_CARDS } from "../../constants";
-import { repoShortName } from "../../helpers";
+import { bodyStatus, repoShortName } from "../../helpers";
 import { s } from "../../styles";
-import { ConventionCard } from "../ConventionCard";
+import { ConventionsBody } from "./_components/ConventionsBody";
+import type { ConventionPatch } from "./_components/ConventionsList";
 import { CreateConventionsSkillModal } from "../CreateConventionsSkillModal";
 
 /**
@@ -57,12 +57,7 @@ export function ConventionsView({
         ),
     });
 
-  const patch = (c: ConventionCandidate, p: { accepted?: boolean; rule?: string }) =>
-    update.mutate({ id: c.id, patch: p });
-
-  const setAll = (value: boolean) => {
-    for (const c of items) if (c.accepted !== value) patch(c, { accepted: value });
-  };
+  const patch = (c: ConventionCandidate, p: ConventionPatch) => update.mutate({ id: c.id, patch: p });
 
   const subtitle = data?.last_scan_at
     ? `${t("page.candidateCount", { count: items.length })} · ${t("page.lastScan", {
@@ -97,57 +92,13 @@ export function ConventionsView({
         )}
       </div>
 
-      {isLoading ? (
-        <div style={s.list}>
-          {Array.from({ length: SKELETON_CARDS }, (_, i) => (
-            <Skeleton key={i} height={150} />
-          ))}
-        </div>
-      ) : isError ? (
-        <ErrorState body={t("page.loadError")} onRetry={() => void refetch()} />
-      ) : items.length === 0 && !cloned ? (
-        <EmptyState icon="GitBranch" title={t("page.notCloned.title")} body={t("page.notCloned.body")} />
-      ) : items.length === 0 ? (
-        <EmptyState
-          icon="ListChecks"
-          title={t("page.empty.title")}
-          body={t("page.empty.body")}
-          cta={scanning ? t("page.scanning") : t("page.empty.cta")}
-          onCta={runExtraction}
-          ctaLoading={scanning}
-        />
-      ) : (
-        <>
-          <div style={s.toolbar}>
-            {accepted.length === items.length ? (
-              <Button kind="secondary" size="sm" icon="X" onClick={() => setAll(false)}>
-                {t("page.deselectAll")}
-              </Button>
-            ) : (
-              <Button kind="secondary" size="sm" icon="Check" onClick={() => setAll(true)}>
-                {t("page.acceptAll")}
-              </Button>
-            )}
-            <span style={s.count}>
-              {t("page.acceptedCount", { accepted: accepted.length, total: items.length })}
-            </span>
-            <span style={s.spacer} />
-            <Button kind="primary" icon="Sparkles" disabled={accepted.length === 0} onClick={() => setModalOpen(true)}>
-              {t("page.createSkill")}
-            </Button>
-          </div>
-          <div style={s.list}>
-            {items.map((c) => (
-              <ConventionCard
-                key={c.id}
-                candidate={c}
-                onSetAccepted={(value) => c.accepted !== value && patch(c, { accepted: value })}
-                onSaveRule={(rule) => patch(c, { rule })}
-              />
-            ))}
-          </div>
-        </>
-      )}
+      <ConventionsBody
+        status={bodyStatus(isLoading, isError)}
+        items={items}
+        cloned={cloned}
+        scanning={scanning}
+        actions={{ retry: () => void refetch(), run: runExtraction, patch, createSkill: () => setModalOpen(true) }}
+      />
 
       {modalOpen && (
         <CreateConventionsSkillModal
@@ -161,3 +112,4 @@ export function ConventionsView({
     </div>
   );
 }
+

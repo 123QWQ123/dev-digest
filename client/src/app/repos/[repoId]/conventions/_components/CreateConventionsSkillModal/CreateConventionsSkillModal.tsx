@@ -68,10 +68,9 @@ export function CreateConventionsSkillModal({
         <SkillForm
           initial={initial}
           mode="create"
-          hideTitle
+          header={null}
           types={CONVENTION_ONLY}
-          submitting={create.isPending}
-          submitLabel={t("submit")}
+          submit={{ pending: create.isPending, label: t("submit") }}
           onSubmit={submit}
           onCancel={onClose}
         />

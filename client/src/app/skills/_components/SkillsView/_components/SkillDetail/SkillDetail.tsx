@@ -9,7 +9,7 @@ import { useToast } from "@/lib/toast";
 import { DETAIL_TABS } from "../../constants";
 import { isUntrusted } from "../../helpers";
 import { PreviewTab } from "../PreviewTab";
-import { SkillForm, SkillTypeBadge, type SkillFormValues } from "@/components/skills";
+import { SkillForm, SkillFormTitle, SkillTypeBadge, type SkillFormValues } from "@/components/skills";
 import { StatsTab } from "../StatsTab";
 import { VersionsTab } from "../VersionsTab";
 import { s } from "./styles";
@@ -93,8 +93,8 @@ export function SkillDetail({
           <SkillForm
             key={`${skill.id}:${skill.version}`}
             mode="edit"
-            version={skill.version}
-            submitting={update.isPending}
+            header={<SkillFormTitle title={t("form.title")} version={skill.version} />}
+            submit={{ pending: update.isPending }}
             initial={{
               name: skill.name,
               description: skill.description,

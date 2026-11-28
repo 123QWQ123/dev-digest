@@ -46,5 +46,7 @@ export const conventions = pgTable(
     accepted: boolean('accepted').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => ({ repoIdx: index('conventions_repo_idx').on(t.repoId) }),
+  // Every query filters on (workspace_id, repo_id); the leftmost column also
+  // serves the workspace_id FK (cascade deletes).
+  (t) => ({ wsRepoIdx: index('conventions_ws_repo_idx').on(t.workspaceId, t.repoId) }),
 );

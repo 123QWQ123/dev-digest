@@ -1,6 +1,7 @@
 import type { Container } from '../../platform/container.js';
 import { createSkillsService } from '../skills/index.js';
 import { createFeatureModelResolver } from '../settings/index.js';
+import { renderPrompt } from '../../platform/prompts.js';
 import { ConventionsRepository } from './repository.js';
 import { ConventionsService, type ConventionsLogger } from './service.js';
 
@@ -23,6 +24,7 @@ export function createConventionsService(
       git: () => container.git,
       repoIntel: () => container.repoIntel,
       resolveModel: createFeatureModelResolver(container),
+      renderPrompt,
       skills: createSkillsService(container),
       inFlight,
       log,

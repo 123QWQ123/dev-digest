@@ -64,7 +64,7 @@ export function SkillsView({ selectedId }: { selectedId?: string }) {
           <SkillForm
             mode="create"
             initial={EMPTY_SKILL}
-            submitting={create.isPending}
+            submit={{ pending: create.isPending }}
             onSubmit={submitCreate}
             onCancel={() => setCreating(false)}
           />

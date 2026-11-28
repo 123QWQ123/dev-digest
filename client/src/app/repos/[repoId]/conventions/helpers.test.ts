@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { ConventionCandidate } from "@devdigest/shared";
 import { SKILL_BODY_MAX, SKILL_NAME_RE } from "@/components/skills";
-import { buildSkillDraft, defaultSkillName, evidenceRef, slugify, confidenceColor } from "./helpers";
+import { bodyStatus, buildSkillDraft, defaultSkillName, evidenceRef, slugify, confidenceColor } from "./helpers";
 
 const c = (over: Partial<ConventionCandidate> = {}): ConventionCandidate => ({
   id: "c1",
@@ -67,5 +67,13 @@ describe("buildSkillDraft", () => {
   it("never exceeds the skill body limit", () => {
     const big = Array.from({ length: 30 }, (_, i) => c({ id: `c${i}`, rule: `Rule ${i}`, evidence_snippet: "x".repeat(1500) }));
     expect(buildSkillDraft("x", big, TEXTS).body.length).toBeLessThanOrEqual(SKILL_BODY_MAX);
+  });
+});
+
+describe("bodyStatus", () => {
+  it("loading wins over error; otherwise ready", () => {
+    expect(bodyStatus(true, true)).toBe("loading");
+    expect(bodyStatus(false, true)).toBe("error");
+    expect(bodyStatus(false, false)).toBe("ready");
   });
 });

@@ -8,7 +8,7 @@ import { useCreateSkill, useImportSkillPreview } from "@/lib/hooks/skills";
 import { useToast } from "@/lib/toast";
 import { IMPORT_MAX_BYTES } from "../../constants";
 import { fileToBase64 } from "../../helpers";
-import { SkillForm, type SkillFormValues } from "@/components/skills";
+import { SkillForm, SkillFormTitle, type SkillFormValues } from "@/components/skills";
 import { s } from "./styles";
 
 /**
@@ -114,10 +114,7 @@ export function ImportSkillDrawer({
           <SkillForm
             key={data.source_file + data.name}
             mode="create"
-            title={t("import.previewTitle")}
-            submitting={create.isPending}
-            submitBlocked={!trusted}
-            submitLabel={t("import.save")}
+            header={<SkillFormTitle title={t("import.previewTitle")} />}
             onCancel={onClose}
             initial={{
               name: data.name,
@@ -128,13 +125,18 @@ export function ImportSkillDrawer({
               note: "",
             }}
             onSubmit={save}
-            beforeActions={
-              <div style={s.trust}>
-                <div style={s.boxTitle}>{t("import.trustTitle")}</div>
-                <p style={s.trustBody}>{t("import.trustBody")}</p>
-                <Checkbox checked={trusted} onChange={setTrusted} label={t("import.confirm")} />
-              </div>
-            }
+            submit={{
+              pending: create.isPending,
+              blocked: !trusted,
+              label: t("import.save"),
+              extra: (
+                <div style={s.trust}>
+                  <div style={s.boxTitle}>{t("import.trustTitle")}</div>
+                  <p style={s.trustBody}>{t("import.trustBody")}</p>
+                  <Checkbox checked={trusted} onChange={setTrusted} label={t("import.confirm")} />
+                </div>
+              ),
+            }}
           />
         </div>
       )}

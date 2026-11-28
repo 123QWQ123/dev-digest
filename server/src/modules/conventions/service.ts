@@ -15,7 +15,6 @@ import {
   type UpdateConventionInput,
 } from '@devdigest/shared';
 import { AppError, ExternalServiceError, NotFoundError, ValidationError } from '../../platform/errors.js';
-import { renderPrompt } from '../../platform/prompts.js';
 import type { RepoIntel } from '../repo-intel/types.js';
 import type { SkillsService } from '../skills/index.js';
 import type { FeatureModelResolver } from '../settings/index.js';
@@ -41,6 +40,8 @@ export interface ConventionsDeps {
   git: () => GitClient;
   repoIntel: () => RepoIntel;
   resolveModel: FeatureModelResolver;
+  /** Renders a prompt template (`src/prompts/*.md`) — injected so the use case does no hidden file I/O. */
+  renderPrompt: (name: string, vars: Record<string, string>) => Promise<string>;
   skills: Pick<SkillsService, 'createExtracted'>;
   /** Repo ids with an extraction in progress (shared across requests). */
   inFlight: Set<string>;
@@ -100,7 +101,7 @@ export class ConventionsService {
 
     const { provider, model } = await this.deps.resolveModel(workspaceId, 'conventions');
     const llm = await this.deps.llm(provider);
-    const system = await renderPrompt('conventions.system.md', {
+    const system = await this.deps.renderPrompt('conventions.system.md', {
       max: String(CONVENTION_MAX_CANDIDATES),
       rule_max: String(CONVENTION_RULE_MAX),
     });

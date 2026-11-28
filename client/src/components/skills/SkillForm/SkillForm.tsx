@@ -2,38 +2,14 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
-import { Badge, Button, FormField, SelectInput, TextInput, Toggle } from "@devdigest/ui";
+import { Button, FormField, SelectInput, TextInput, Toggle } from "@devdigest/ui";
 import type { SkillType } from "@devdigest/shared";
 import { PromptEditor } from "@/components/prompt-editor";
-import { SKILL_BODY_MAX, SKILL_NAME_RE, SKILL_TYPES } from "../constants";
+import { SKILL_BODY_MAX, SKILL_TYPES } from "../constants";
+import { isValidSkill } from "./helpers";
+import { SkillFormTitle } from "./SkillFormTitle";
+import type { SkillFormSubmit, SkillFormValues } from "./types";
 import { s } from "./styles";
-
-export interface SkillFormValues {
-  name: string;
-  description: string;
-  type: SkillType;
-  body: string;
-  enabled: boolean;
-  note: string;
-}
-
-export const EMPTY_SKILL: SkillFormValues = {
-  name: "",
-  description: "",
-  type: "custom",
-  body: "",
-  enabled: true,
-  note: "",
-};
-
-export function isValidSkill(v: SkillFormValues): boolean {
-  return (
-    SKILL_NAME_RE.test(v.name) &&
-    v.description.trim().length > 0 &&
-    v.body.trim().length > 0 &&
-    v.body.length <= SKILL_BODY_MAX
-  );
-}
 
 /**
  * Skill editor form — shared by "Create skill" and the detail Config tab.
@@ -42,34 +18,21 @@ export function isValidSkill(v: SkillFormValues): boolean {
 export function SkillForm({
   initial,
   mode,
-  submitting,
   onSubmit,
   onCancel,
-  title,
-  beforeActions,
-  submitBlocked = false,
-  submitLabel,
-  version,
+  header,
   types = SKILL_TYPES,
-  hideTitle = false,
+  submit = {},
 }: {
   initial: SkillFormValues;
   mode: "create" | "edit";
-  submitting: boolean;
   onSubmit: (values: SkillFormValues) => void;
   onCancel?: () => void;
-  title?: React.ReactNode;
-  /** Rendered above the buttons (e.g. the import trust confirmation). */
-  beforeActions?: React.ReactNode;
-  /** Extra gate on submit besides validity (e.g. "I trust this skill"). */
-  submitBlocked?: boolean;
-  submitLabel?: string;
-  /** Current version, shown next to the title in edit mode. */
-  version?: number;
+  /** Heading slot: omitted → the default title for `mode`; `null` → none (e.g. inside a Modal). */
+  header?: React.ReactNode;
   /** Selectable types (e.g. only `convention` for an extracted skill). */
   types?: readonly SkillType[];
-  /** Hide the heading when a container (modal) already shows one. */
-  hideTitle?: boolean;
+  submit?: SkillFormSubmit;
 }) {
   const t = useTranslations("skills");
   const [v, setV] = React.useState(initial);
@@ -82,14 +45,11 @@ export function SkillForm({
   return (
     <div style={s.wrap}>
       <div style={s.header}>
-        <div style={s.titleGroup}>
-          {!hideTitle && <h2 style={s.h2}>{title ?? (mode === "create" ? t("form.createTitle") : t("form.title"))}</h2>}
-          {version != null && (
-            <Badge color="var(--text-secondary)" icon="GitCommit" mono>
-              v{version}
-            </Badge>
-          )}
-        </div>
+        {header === undefined ? (
+          <SkillFormTitle title={mode === "create" ? t("form.createTitle") : t("form.title")} />
+        ) : (
+          header
+        )}
         <label style={s.enabledLabel}>
           {t("form.enabled")}
           <Toggle on={v.enabled} onChange={set("enabled")} size={16} />
@@ -138,17 +98,17 @@ export function SkillForm({
           <TextInput value={v.note} onChange={set("note")} placeholder={t("form.notePlaceholder")} />
         </FormField>
       )}
-      {beforeActions}
+      {submit.extra}
       <div style={s.actions}>
         <Button
           kind="primary"
           icon="Check"
           onClick={() => onSubmit(v)}
-          disabled={!valid || submitting || submitBlocked}
+          disabled={!valid || submit.pending || submit.blocked}
         >
-          {submitting
+          {submit.pending
             ? t("form.saving")
-            : (submitLabel ?? (mode === "create" ? t("form.create") : t("form.save")))}
+            : (submit.label ?? (mode === "create" ? t("form.create") : t("form.save")))}
         </Button>
         {onCancel && (
           <Button kind="secondary" onClick={onCancel}>

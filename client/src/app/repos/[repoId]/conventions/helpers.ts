@@ -89,3 +89,12 @@ export function buildSkillDraft(
   }
   return { name, description: texts.description, body };
 }
+
+/** Page body state from the list query. */
+export type BodyStatus = "loading" | "error" | "ready";
+
+export function bodyStatus(isLoading: boolean, isError: boolean): BodyStatus {
+  if (isLoading) return "loading";
+  if (isError) return "error";
+  return "ready";
+}
