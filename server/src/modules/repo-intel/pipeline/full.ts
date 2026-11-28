@@ -24,6 +24,9 @@ import { readContainedFile } from '../../../platform/contained-read.js';
 import PQueue from 'p-queue';
 import type { RepoRef } from '@devdigest/shared';
 import type { Container } from '../../../platform/container.js';
+
+/** The container members this code actually uses (explicit deps, not a service locator). */
+export type IndexPipelineDeps = Pick<Container, 'depgraph' | 'git' | 'tokenizer'>;
 import { withTimeout } from '../../../platform/resilience.js';
 import { parseSymbols, parseReferences, langForFile } from '../../../adapters/astgrep/index.js';
 import { extractEndpoints, extractCrons } from '../../../adapters/codeindex/extract.js';
@@ -68,7 +71,7 @@ const PARSE_DEGRADED_CAP = 50;
  * idempotent on retry.
  */
 export async function runFullIndex(
-  container: Container,
+  container: IndexPipelineDeps,
   repository: RepoIntelRepository,
   payload: IndexPayload,
 ): Promise<IndexResult> {
@@ -299,7 +302,7 @@ function sha1(s: string): string {
   return createHash('sha1').update(s).digest('hex');
 }
 
-async function safeCurrentHead(container: Container, ref: RepoRef): Promise<string> {
+async function safeCurrentHead(container: IndexPipelineDeps, ref: RepoRef): Promise<string> {
   try {
     return await container.git.currentHead(ref);
   } catch {

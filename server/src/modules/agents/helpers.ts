@@ -1,6 +1,21 @@
-import type { Agent, AgentVersion, CiFailOn, Provider, ReviewStrategy } from '@devdigest/shared';
+import type {
+  Agent,
+  AgentSkill,
+  AgentStats,
+  AgentVersion,
+  CiFailOn,
+  Provider,
+  ReviewStrategy,
+  SkillType,
+} from '@devdigest/shared';
 import { AgentVersionConfig } from '@devdigest/shared';
-import type { AgentRow, AgentVersionRow } from './repository.js';
+import type {
+  AgentFindingAggregate,
+  AgentRow,
+  AgentRunAggregate,
+  AgentVersionRow,
+  LinkedSkillRow,
+} from './repository.js';
 
 /**
  * Pure helpers for the agents module — DB row ⇄ DTO mapping and the
@@ -38,6 +53,19 @@ export function toAgentVersionDto(row: AgentVersionRow): AgentVersion {
     version: row.version,
     config: AgentVersionConfig.parse(row.configJson),
     created_at: row.createdAt.toISOString(),
+  };
+}
+
+/** Map an agent_skills link (joined with its skill) to the editor's `AgentSkill`. */
+export function toAgentSkillDto(link: LinkedSkillRow): AgentSkill {
+  return {
+    skill_id: link.skill.id,
+    name: link.skill.name,
+    description: link.skill.description,
+    type: link.skill.type as SkillType,
+    order: link.order,
+    enabled: link.enabled,
+    skill_enabled: link.skill.enabled,
   };
 }
 
@@ -83,4 +111,73 @@ export function isConfigChange(
     (patch.repoIntel !== undefined && patch.repoIntel !== existing.repoIntel) ||
     patch.outputSchema !== undefined
   );
+}
+
+// ---- usage stats ------------------------------------------------------------
+
+function ratio(num: number, den: number): number | null {
+  return den > 0 ? num / den : null;
+}
+
+function sumFindings(rows: AgentFindingAggregate[]) {
+  const bySeverity = { CRITICAL: 0, WARNING: 0, SUGGESTION: 0 };
+  let total = 0;
+  let accepted = 0;
+  let dismissed = 0;
+  for (const r of rows) {
+    total += r.findings;
+    accepted += r.accepted;
+    dismissed += r.dismissed;
+    if (r.severity in bySeverity) bySeverity[r.severity as keyof typeof bySeverity] += r.findings;
+  }
+  return { total, accepted, dismissed, bySeverity };
+}
+
+/** Card-sized summary per agent (runs, accept rate, avg cost). */
+export function agentCardStats(
+  runs: AgentRunAggregate[],
+  findings: AgentFindingAggregate[],
+): Map<string, NonNullable<Agent['stats']>> {
+  const out = new Map<string, NonNullable<Agent['stats']>>();
+  for (const r of runs) {
+    const f = sumFindings(findings.filter((x) => x.agentId === r.agentId));
+    out.set(r.agentId, {
+      runs: r.runs,
+      accept_rate: ratio(f.accepted, f.accepted + f.dismissed),
+      avg_cost_usd: r.avgCostUsd,
+    });
+  }
+  return out;
+}
+
+/** The M7 `AgentStats` contract, computed over the stats window. */
+export function toAgentStats(
+  agent: { id: string; name: string },
+  runs: AgentRunAggregate | undefined,
+  findings: AgentFindingAggregate[],
+  recent: { ranAt: Date; score: number | null }[],
+): AgentStats {
+  const f = sumFindings(findings);
+  const n = runs?.runs ?? 0;
+  const acted = f.accepted + f.dismissed;
+  return {
+    agent_id: agent.id,
+    agent_name: agent.name,
+    runs: n,
+    findings_total: f.total,
+    accepted: f.accepted,
+    dismissed: f.dismissed,
+    pending: f.total - acted,
+    accept_rate: ratio(f.accepted, acted),
+    dismiss_rate: ratio(f.dismissed, acted),
+    avg_findings_per_run: ratio(f.total, n),
+    total_cost_usd: runs?.totalCostUsd ?? null,
+    avg_cost_usd: runs?.avgCostUsd ?? null,
+    avg_latency_ms: runs?.avgDurationMs ?? null,
+    findings_by_severity: f.bySeverity,
+    trend: [...recent]
+      .reverse()
+      .filter((r) => r.score != null)
+      .map((r) => ({ label: r.ranAt.toISOString().slice(0, 10), value: r.score as number })),
+  };
 }

@@ -6,9 +6,8 @@ import { loadConfig } from '../src/platform/config.js';
 import { seed } from '../src/db/seed.js';
 import * as t from '../src/db/schema.js';
 import { MockGitClient, MockGitHubClient } from '../src/adapters/mocks.js';
-import { AgentsService } from '../src/modules/agents/service.js';
+import { AgentsService, type AgentsServiceDeps } from '../src/modules/agents/service.js';
 import { AgentsRepository } from '../src/modules/agents/repository.js';
-import type { Container } from '../src/platform/container.js';
 
 const hasDocker = await dockerAvailable();
 const d = hasDocker ? describe : describe.skip;
@@ -164,15 +163,18 @@ d('GET /agents/:id/versions', () => {
       systemPrompt: 'x',
     });
 
-    const service = new AgentsService({ db } as unknown as Container);
-    const [{ id: defaultWs }] = await db
+    const service = new AgentsService(
+      { llm: async () => { throw new Error('llm is not used by this test'); } } satisfies AgentsServiceDeps,
+      new AgentsRepository(db),
+    );
+    const [defaultRow] = await db
       .select({ id: t.workspaces.id })
       .from(t.workspaces)
       .where(eq(t.workspaces.name, 'default'));
 
     // Owner can read; a different workspace is denied (undefined → 404 at route).
     expect(await service.listVersions(otherWs!.id, foreign.id)).toHaveLength(1);
-    expect(await service.listVersions(defaultWs!, foreign.id)).toBeUndefined();
-    expect(await service.getVersion(defaultWs!, foreign.id, 1)).toBeUndefined();
+    expect(await service.listVersions(defaultRow!.id, foreign.id)).toBeUndefined();
+    expect(await service.getVersion(defaultRow!.id, foreign.id, 1)).toBeUndefined();
   });
 });

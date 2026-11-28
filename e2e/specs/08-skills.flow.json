@@ -1,0 +1,140 @@
+{
+  "name": "Skills page and the agent Skills tab show the seeded Test Quality skills",
+  "description": "Loads /skills, opens a seeded skill's Config, then opens the Test Quality Reviewer and its Skills tab to confirm the three seeded skills are linked and enabled. Exercises GET /skills, GET /skills/:id, GET /skills/:id/stats and GET /agents/:id/skills.",
+  "steps": [
+    {
+      "cmd": [
+        "open",
+        "{BASE}/skills"
+      ],
+      "label": "load the skills page"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--url",
+        "/skills"
+      ],
+      "label": "skills route reached"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "branch-coverage-gate"
+      ],
+      "label": "seeded skill card is visible"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "mock-discipline"
+      ],
+      "label": "all seeded skills listed"
+    },
+    {
+      "cmd": [
+        "find",
+        "testid",
+        "skill-card-branch-coverage-gate",
+        "click"
+      ],
+      "label": "open the skill (by testid: the name is also the i18n namePlaceholder, serialized into an invisible RSC <script> that `find text` can hit first)"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "Skill body (Markdown)"
+      ],
+      "label": "Config form rendered"
+    },
+    {
+      "cmd": [
+        "find",
+        "role",
+        "button",
+        "click",
+        "--name",
+        "Stats"
+      ],
+      "label": "open the skill Stats tab"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "A finding counts for every skill"
+      ],
+      "label": "stats tab rendered (footnote; tile labels are CSS-uppercased)"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "Test Quality Reviewer"
+      ],
+      "label": "agent using the skill is listed"
+    },
+    {
+      "cmd": [
+        "open",
+        "{BASE}/agents"
+      ],
+      "label": "go to agents"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "Test Quality Reviewer"
+      ],
+      "label": "seeded agent card is visible"
+    },
+    {
+      "cmd": [
+        "find",
+        "text",
+        "Test Quality Reviewer",
+        "click"
+      ],
+      "label": "open the agent"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--url",
+        "/agents/"
+      ],
+      "label": "agent editor reached"
+    },
+    {
+      "cmd": [
+        "find",
+        "role",
+        "button",
+        "click",
+        "--name",
+        "Skills"
+      ],
+      "label": "open the Skills tab"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "3 of 3 enabled"
+      ],
+      "label": "three linked skills are enabled"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "corner-case-checklist"
+      ],
+      "label": "linked skill row is visible"
+    }
+  ]
+}

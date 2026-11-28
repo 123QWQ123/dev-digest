@@ -15,12 +15,41 @@
       "body": "Scan the repo to surface house-rules — naming, error handling, structure — each backed by evidence you can turn into a Skill.",
       "cta": "Run extraction"
     },
-    "candidateCount": "{count, plural, one {# candidate} other {# candidates}} · grounded against sampled files"
+    "candidateCount": "{count, plural, one {# candidate} other {# candidates}} · grounded against sampled files",
+    "lastScan": "last scan {ago}",
+    "acceptedCount": "{accepted} of {total} accepted",
+    "acceptAll": "Accept all",
+    "deselectAll": "Deselect all",
+    "createSkill": "Create skill",
+    "scanDone": "{kept, plural, one {# convention} other {# conventions}} found in {files} files ({dropped} without evidence dropped) · {cost} · {model}",
+    "costUnknown": "cost unknown",
+    "notCloned": {
+      "title": "This repo isn't cloned",
+      "body": "There is no local checkout to scan. Repos from the demo seed are never cloned — add a real repository (or re-add this one) and wait for the clone and index to finish, then run extraction."
+    }
   },
   "card": {
     "confidence": "Confidence",
     "accepted": "Accepted",
     "accepting": "Accepting…",
-    "acceptAsSkill": "Accept as Skill"
+    "acceptAsSkill": "Accept as Skill",
+    "reject": "Reject",
+    "rejected": "Rejected",
+    "edit": "Edit rule",
+    "save": "Save",
+    "cancel": "Cancel",
+    "copy": "Copy snippet",
+    "copied": "Copied",
+    "ruleLabel": "Convention rule",
+    "accept": "Accept"
+  },
+  "modal": {
+    "title": "Create skill from conventions",
+    "banner": "Merged from {count, plural, one {# accepted convention} other {# accepted conventions}} in {repo}. Everything below is editable before you save.",
+    "submit": "Create skill",
+    "created": "Skill {name} created — link it to an agent in its Skills tab",
+    "draftIntro": "House conventions for `{repo}`. Flag changes that violate any rule below and cite the offending `file:line`.",
+    "draftDetected": "Detected in",
+    "draftDescription": "{count, plural, one {# house convention} other {# house conventions}} extracted from {repo}"
   }
 }

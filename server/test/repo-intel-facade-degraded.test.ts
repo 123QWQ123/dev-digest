@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { RepoIntelService } from '../src/modules/repo-intel/service.js';
-import type { RepoBasics } from '../src/modules/repo-intel/repository.js';
+import { RepoIntelService, type RepoIntelServiceDeps } from '../src/modules/repo-intel/service.js';
+import type { RepoBasics, RepoIntelRepository } from '../src/modules/repo-intel/repository.js';
 import type { IndexState } from '../src/modules/repo-intel/types.js';
 
 /**
@@ -20,24 +20,31 @@ function buildDegradedService(opts: {
   basics?: RepoBasics | null;
   indexStateRow?: IndexState | null;
 }): RepoIntelService {
+  // Only the members the degraded paths reach are stubbed; each stub is
+  // type-checked against the real signatures before the single widening cast.
   const container = {
-    config: { repoIntelEnabled: opts.flag },
-    db: {} as never,
+    config: { repoIntelEnabled: opts.flag } satisfies Pick<RepoIntelServiceDeps['config'], 'repoIntelEnabled'>,
     // codeIndex is reached by getBlastRadius; we stub minimal behaviour.
     codeIndex: {
+      grep: async () => [],
       symbols: async () => [],
       references: async () => [],
-    } as never,
-  } as never;
-  const svc = new RepoIntelService(container);
-  (svc as unknown as { repo: Record<string, unknown> }).repo = {
+    },
+  } satisfies { config: Pick<RepoIntelServiceDeps['config'], 'repoIntelEnabled'> } & Pick<RepoIntelServiceDeps, 'codeIndex'>;
+  const repo = {
     getRepoBasics: async () => opts.basics ?? null,
     tryGetIndexState: async () => opts.indexStateRow ?? null,
     getCachedSymbols: async () => [],
     getCachedSymbolsForFiles: async () => [],
     getCachedReferencesTo: async () => [],
-  };
-  return svc;
+  } satisfies Pick<
+    RepoIntelRepository,
+    'getRepoBasics' | 'tryGetIndexState' | 'getCachedSymbols' | 'getCachedSymbolsForFiles' | 'getCachedReferencesTo'
+  >;
+  return new RepoIntelService(
+    container as unknown as RepoIntelServiceDeps,
+    repo as unknown as RepoIntelRepository,
+  );
 }
 
 describe('RepoIntel facade — degraded contract (flag off)', () => {
@@ -109,17 +116,17 @@ describe('RepoIntel facade — degraded contract (flag off)', () => {
 
 describe('RepoIntel facade — degraded contract (flag on, but no data)', () => {
   it('getCallerSignatures with no clone → [] (graceful degrade, no throw)', async () => {
-    const svc = buildDegradedService({ flag: true, basics: { id: 'r1', owner: 'a', name: 'b', clonePath: null } });
+    const svc = buildDegradedService({ flag: true, basics: { id: 'r1', owner: 'a', name: 'b', defaultBranch: 'main', clonePath: null } });
     await expect(svc.getCallerSignatures('r1', ['a.ts'])).resolves.toEqual([]);
   });
 
   it('getUnresolvedReferences with no clone → []', async () => {
-    const svc = buildDegradedService({ flag: true, basics: { id: 'r1', owner: 'a', name: 'b', clonePath: null } });
+    const svc = buildDegradedService({ flag: true, basics: { id: 'r1', owner: 'a', name: 'b', defaultBranch: 'main', clonePath: null } });
     await expect(svc.getUnresolvedReferences('r1', ['a.ts'])).resolves.toEqual([]);
   });
 
   it('getCallerSignatures with empty changedFiles → []', async () => {
-    const svc = buildDegradedService({ flag: true, basics: { id: 'r1', owner: 'a', name: 'b', clonePath: '/tmp' } });
+    const svc = buildDegradedService({ flag: true, basics: { id: 'r1', owner: 'a', name: 'b', defaultBranch: 'main', clonePath: '/tmp' } });
     await expect(svc.getCallerSignatures('r1', [])).resolves.toEqual([]);
   });
 });

@@ -38,7 +38,7 @@ delimiter-wrapped (`prompt.ts:104-122`):
 ```
 <task line, e.g. "Review PR #7 '…'">
 ## PR description        (untrusted, author-controlled, truncated to 4000 chars)
-## Skills / rules        (linked skill bodies)
+## Skills / rules        (enabled linked skills, in link order: "### <name>" + body — M2)
 ## Relevant memory       (curated memory items)
 ## Repo skeleton         (untrusted, repo-derived)
 ## Project context       (untrusted spec chunks)

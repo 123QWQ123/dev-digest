@@ -184,6 +184,19 @@ export async function saveRunTrace(db: Db, runId: string, trace: RunTrace): Prom
     .onConflictDoUpdate({ target: t.runTraces.runId, set: { trace } });
 }
 
+/** Skills rendered into a run's prompt (M2) — feeds skill stats. Idempotent. */
+export async function recordRunSkills(
+  db: Db,
+  runId: string,
+  used: { skillId: string; version: number }[],
+): Promise<void> {
+  if (used.length === 0) return;
+  await db
+    .insert(t.runSkills)
+    .values(used.map((u) => ({ runId, skillId: u.skillId, skillVersion: u.version })))
+    .onConflictDoNothing();
+}
+
 export async function getRunTrace(db: Db, runId: string): Promise<RunTrace | undefined> {
   const [row] = await db.select().from(t.runTraces).where(eq(t.runTraces.runId, runId));
   return row ? (row.trace as RunTrace) : undefined;

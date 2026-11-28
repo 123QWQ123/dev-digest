@@ -2,11 +2,17 @@ import type { Container } from '../../platform/container.js';
 import type { FindingActionKind, RunEventKind, RunTrace } from '@devdigest/shared';
 import { AppError, NotFoundError } from '../../platform/errors.js';
 import type { AgentRow } from '../../db/rows.js';
-import { ReviewRepository } from './repository.js';
+import type { ReviewRepository } from './repository.js';
 import { type ReviewDto, type ReviewDtoFinding } from './helpers.js';
 import { ReviewRunExecutor, type Logger } from './run-executor.js';
 import { actOnFinding as actOnFindingImpl } from './findings.js';
 import { reviewToDto } from './helpers.js';
+
+/** The container members this code actually uses (explicit deps, not a service locator). */
+export type ReviewServiceDeps = Pick<
+  Container,
+  'agentsRepo' | 'runBus' | 'llm' | 'repoIntel' | 'git' | 'tokenizer'
+>;
 
 // Re-export DTO types + converters for backward-compatible imports from
 // './service.js' (these previously lived here; logic now in ./helpers.ts).
@@ -30,8 +36,8 @@ export class ReviewService {
   private agents: Container['agentsRepo'];
   private executor: ReviewRunExecutor;
 
-  constructor(private container: Container) {
-    this.repo = new ReviewRepository(container.db);
+  constructor(private container: ReviewServiceDeps, repo: ReviewRepository) {
+    this.repo = repo;
     this.agents = container.agentsRepo;
     this.executor = new ReviewRunExecutor(container, this.repo, this.agents);
   }

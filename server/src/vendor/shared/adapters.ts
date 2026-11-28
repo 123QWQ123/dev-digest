@@ -228,6 +228,11 @@ export interface GitClient {
 }
 
 // ---------- CodeIndex (ripgrep + tree-sitter) ----------
+/** Source extensions the code index parses (ast-grep symbols, depgraph edges, repo walk). */
+export const SUPPORTED_EXT = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'] as const;
+/** Declaration heads are trimmed to this many chars at parse time (cache stability). */
+export const MAX_SIGNATURE_CHARS = 120;
+
 export interface CodeMatch {
   path: string;
   line: number;

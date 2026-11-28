@@ -1,15 +1,28 @@
 import type { Container } from '../../platform/container.js';
 import type {
   Agent,
-  AgentSkillLink,
+  AgentSkill,
+  AgentStats,
   AgentVersion,
   CiFailOn,
   ModelInfo,
   Provider,
   ReviewStrategy,
 } from '@devdigest/shared';
-import { AgentsRepository } from './repository.js';
-import { toAgentDto, toAgentVersionDto } from './helpers.js';
+import type { AgentsRepository } from './repository.js';
+import { STATS_WINDOW_DAYS } from '@devdigest/shared';
+import {
+  agentCardStats,
+  toAgentDto,
+  toAgentSkillDto,
+  toAgentStats,
+  toAgentVersionDto,
+} from './helpers.js';
+import { ValidationError } from '../../platform/errors.js';
+import { STATS_TREND_RUNS } from './constants.js';
+
+/** The container members this code actually uses (explicit deps, not a service locator). */
+export type AgentsServiceDeps = Pick<Container, 'llm'>;
 
 /**
  * A2 — agents service. Business logic for the Agents tab + Agent Editor.
@@ -51,18 +64,43 @@ export interface UpdateAgentInput {
 export class AgentsService {
   private repo: AgentsRepository;
 
-  constructor(private container: Container) {
-    this.repo = new AgentsRepository(container.db);
+  constructor(private container: AgentsServiceDeps, repo: AgentsRepository) {
+    this.repo = repo;
   }
 
   async list(workspaceId: string): Promise<Agent[]> {
-    const rows = await this.repo.list(workspaceId);
-    return rows.map(toAgentDto);
+    const [rows, counts, runs, findings] = await Promise.all([
+      this.repo.list(workspaceId),
+      this.repo.effectiveSkillCounts(workspaceId),
+      this.repo.runAggregates(workspaceId, STATS_WINDOW_DAYS),
+      this.repo.findingAggregates(workspaceId, STATS_WINDOW_DAYS),
+    ]);
+    const stats = agentCardStats(runs, findings);
+    const empty = { runs: 0, accept_rate: null, avg_cost_usd: null };
+    return rows.map((r) => ({
+      ...toAgentDto(r),
+      skill_count: counts.get(r.id) ?? 0,
+      stats: stats.get(r.id) ?? empty,
+    }));
+  }
+
+  /** Stats tab (M7 contract): aggregates over the last STATS_WINDOW_DAYS. undefined → 404. */
+  async stats(workspaceId: string, agentId: string): Promise<AgentStats | undefined> {
+    const agent = await this.repo.getById(workspaceId, agentId);
+    if (!agent) return undefined;
+    const [runs, findings, recent] = await Promise.all([
+      this.repo.runAggregates(workspaceId, STATS_WINDOW_DAYS, agentId),
+      this.repo.findingAggregates(workspaceId, STATS_WINDOW_DAYS, agentId),
+      this.repo.recentRuns(agentId, STATS_TREND_RUNS),
+    ]);
+    return toAgentStats(agent, runs[0], findings, recent);
   }
 
   async get(workspaceId: string, id: string): Promise<Agent | undefined> {
     const row = await this.repo.getById(workspaceId, id);
-    return row ? toAgentDto(row) : undefined;
+    if (!row) return undefined;
+    const effective = await this.repo.effectiveSkills(id);
+    return { ...toAgentDto(row), skill_count: effective.length };
   }
 
   /** Delete an agent (and its versions/skill-links, via cascade). */
@@ -135,40 +173,31 @@ export class AgentsService {
     return row ? toAgentVersionDto(row) : undefined;
   }
 
-  /** Linked skills for an agent as AgentSkillLink[] (ordered). */
-  async skillLinks(agentId: string): Promise<AgentSkillLink[]> {
-    const links = await this.repo.linkedSkills(agentId);
-    return links.map((l) => ({ agent_id: agentId, skill_id: l.skill.id, order: l.order }));
+  /** Skills linked to an agent, ordered, with per-agent + global switches. */
+  async listSkills(workspaceId: string, agentId: string): Promise<AgentSkill[] | undefined> {
+    if (!(await this.repo.getById(workspaceId, agentId))) return undefined;
+    return (await this.repo.linkedSkills(agentId)).map(toAgentSkillDto);
   }
 
   /**
-   * Set / reorder the agent's linked skills. If `skillIds` is provided, replaces
-   * the whole set in that order. Returns the resulting ordered links.
+   * Replace the agent's ordered link set (array order = prompt order). Every
+   * skill must belong to the workspace — otherwise 422, nothing is written.
    */
   async setSkills(
     workspaceId: string,
     agentId: string,
-    skillIds: string[],
-  ): Promise<AgentSkillLink[] | undefined> {
-    const agent = await this.repo.getById(workspaceId, agentId);
-    if (!agent) return undefined;
-    await this.repo.setSkills(agentId, skillIds);
-    return this.skillLinks(agentId);
-  }
-
-  /** Link a single skill (append or set order) — additive to existing links. */
-  async linkSkill(
-    workspaceId: string,
-    agentId: string,
-    skillId: string,
-    order?: number,
-  ): Promise<AgentSkillLink[] | undefined> {
-    const agent = await this.repo.getById(workspaceId, agentId);
-    if (!agent) return undefined;
-    const existing = await this.repo.linkedSkills(agentId);
-    const resolvedOrder = order ?? existing.length;
-    await this.repo.linkSkill(agentId, skillId, resolvedOrder);
-    return this.skillLinks(agentId);
+    items: { skill_id: string; enabled: boolean }[],
+  ): Promise<AgentSkill[] | undefined> {
+    if (!(await this.repo.getById(workspaceId, agentId))) return undefined;
+    const ids = items.map((i) => i.skill_id);
+    if ((await this.repo.countWorkspaceSkills(workspaceId, ids)) !== ids.length) {
+      throw new ValidationError('Unknown skill_id for this workspace');
+    }
+    await this.repo.setSkills(
+      agentId,
+      items.map((i) => ({ skillId: i.skill_id, enabled: i.enabled })),
+    );
+    return this.listSkills(workspaceId, agentId);
   }
 
   /**

@@ -70,7 +70,9 @@ Each package has its own README with deeper diagrams:
 - **Add repository** — paste a repo URL; the server clones and indexes it.
 - **Import pull requests** — pull open PRs and their diff, commits, body, and linked issue.
 - **View diff** — GitHub-like diff in the browser.
-- **Agents** — two built-in reviewers (General + Security); create/edit your own (model + system prompt).
+- **Agents** — four built-in reviewers (General, Security, Performance, Test Quality); create/edit your own (model + system prompt + linked skills).
+- **Skills** (M2) — reusable markdown instruction blocks: create, edit, version, import (.md/.zip), attach to agents in order.
+- **Conventions** (M2) — scan a repo for house rules (each grounded in a real snippet), accept/edit them, and save the accepted ones as a `convention` skill.
 - **Run a review** — single-pass analysis returning structured findings (severity + score), with the grounding gate and repo-map context working from the start.
 
 ## Roadmap

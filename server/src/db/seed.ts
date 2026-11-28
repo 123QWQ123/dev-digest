@@ -6,7 +6,9 @@ import {
   GENERAL_REVIEWER_PROMPT,
   SECURITY_REVIEWER_PROMPT,
   PERFORMANCE_REVIEWER_PROMPT,
+  TEST_QUALITY_REVIEWER_PROMPT,
 } from './seed-prompts.js';
+import { TEST_QUALITY_SKILLS } from './seed-skills.js';
 
 /** Default provider/model for the built-in reviewer agents. */
 const DEFAULT_PROVIDER = 'openrouter' as const;
@@ -18,11 +20,13 @@ const DEFAULT_MODEL = 'deepseek/deepseek-v4-flash';
  *
  * Seeds: default workspace + system user + membership, default settings,
  * demo repo (acme/payments-api), PR #482 with files/commits, a sample review
- * with a few findings, and the three built-in agents (General + Security +
- * Performance), all on the default openrouter/deepseek-v4-flash provider+model.
+ * with a few findings, and the four built-in agents (General + Security +
+ * Performance + Test Quality), all on the default openrouter/deepseek-v4-flash
+ * provider+model. M2: the Test Quality skills, linked to the Test Quality
+ * Reviewer on first seed only (later user edits to the links are kept).
  *
- * Later milestones populate the other tables (skills, conventions, memory, eval,
- * …) once their features are built — they start empty here.
+ * Later milestones populate the other tables (conventions, memory, eval, …)
+ * once their features are built — they start empty here.
  */
 
 export const DEFAULT_WORKSPACE_NAME = 'default';
@@ -211,6 +215,17 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
       version: 1,
       createdBy: userId,
     },
+    {
+      workspaceId,
+      name: 'Test Quality Reviewer',
+      description: 'Finds untested branches, missed corner cases, over-mocking and flaky tests.',
+      provider: DEFAULT_PROVIDER,
+      model: DEFAULT_MODEL,
+      systemPrompt: TEST_QUALITY_REVIEWER_PROMPT,
+      enabled: true,
+      version: 1,
+      createdBy: userId,
+    },
   ];
   for (const a of seedAgents) {
     const [existing] = await db
@@ -219,6 +234,8 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
       .where(and(eq(t.agents.workspaceId, workspaceId), eq(t.agents.name, a.name)));
     if (!existing) await db.insert(t.agents).values(a);
   }
+
+  await seedTestQualitySkills(db, workspaceId);
 
   return { workspaceId, userId };
 }
@@ -242,4 +259,56 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       await handle.close();
       process.exit(1);
     });
+}
+
+/**
+ * M2 — seed the Test Quality skills (v1 snapshot each) and link them, in order,
+ * to the Test Quality Reviewer. Idempotent: skills are matched by name, and the
+ * links are written only while the agent has none, so re-seeding never undoes
+ * what the user changed in the Skills tab.
+ */
+async function seedTestQualitySkills(db: Db, workspaceId: string): Promise<void> {
+  const skillIds: string[] = [];
+  for (const s of TEST_QUALITY_SKILLS) {
+    let [row] = await db
+      .select({ id: t.skills.id })
+      .from(t.skills)
+      .where(and(eq(t.skills.workspaceId, workspaceId), eq(t.skills.name, s.name)));
+    if (!row) {
+      // Skill + its v1 snapshot in one transaction: a skill without a version
+      // would never be repaired, since re-seeding matches by name and skips it.
+      row = await db.transaction(async (tx) => {
+        const [created] = await tx
+          .insert(t.skills)
+          .values({ workspaceId, ...s, source: 'manual', enabled: true, version: 1 })
+          .returning({ id: t.skills.id });
+        await tx.insert(t.skillVersions).values({
+          skillId: created!.id,
+          version: 1,
+          name: s.name,
+          description: s.description,
+          type: s.type,
+          body: s.body,
+          note: 'Initial version',
+        });
+        return created;
+      });
+    }
+    skillIds.push(row!.id);
+  }
+
+  const [agent] = await db
+    .select({ id: t.agents.id })
+    .from(t.agents)
+    .where(and(eq(t.agents.workspaceId, workspaceId), eq(t.agents.name, 'Test Quality Reviewer')));
+  if (!agent) return;
+  const [anyLink] = await db
+    .select({ skillId: t.agentSkills.skillId })
+    .from(t.agentSkills)
+    .where(eq(t.agentSkills.agentId, agent.id))
+    .limit(1);
+  if (anyLink) return;
+  await db
+    .insert(t.agentSkills)
+    .values(skillIds.map((skillId, order) => ({ agentId: agent.id, skillId, order, enabled: true })));
 }

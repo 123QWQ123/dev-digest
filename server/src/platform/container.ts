@@ -10,6 +10,7 @@ import type {
 import type { AppConfig } from './config.js';
 import type { Db } from '../db/client.js';
 import { JobRunner } from './jobs.js';
+import { DrizzleJobStore } from '../db/job-store.js';
 import { runBus, type RunBus } from './sse.js';
 import { LocalSecretsProvider } from '../adapters/secrets/local.js';
 import { LocalNoAuthProvider } from '../adapters/auth/local.js';
@@ -26,7 +27,7 @@ import { ConfigError } from './errors.js';
 import { AgentsRepository } from '../modules/agents/repository.js';
 import { ReviewRepository } from '../modules/reviews/repository.js';
 import type { RepoIntel } from '../modules/repo-intel/types.js';
-import { RepoIntelService } from '../modules/repo-intel/service.js';
+import { createRepoIntelService } from '../modules/repo-intel/compose.js';
 import { type DepGraph, DepCruiseGraph } from '../adapters/depgraph/index.js';
 import { type Tokenizer, TiktokenTokenizer } from '../adapters/tokenizer/index.js';
 
@@ -83,7 +84,7 @@ export class Container {
     this.secrets = overrides.secrets ?? new LocalSecretsProvider(config.secretsPath);
     this.auth = overrides.auth ?? new LocalNoAuthProvider(db);
     this.runBus = runBus;
-    this.jobs = new JobRunner(db);
+    this.jobs = new JobRunner(new DrizzleJobStore(db));
   }
 
   get git(): GitClient {
@@ -115,7 +116,7 @@ export class Container {
    */
   get repoIntel(): RepoIntel {
     if (this.overrides.repoIntel) return this.overrides.repoIntel;
-    this._repoIntel ??= new RepoIntelService(this);
+    this._repoIntel ??= createRepoIntelService(this);
     return this._repoIntel;
   }
 

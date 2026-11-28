@@ -45,6 +45,13 @@ for dir in server client; do
   fi
 done
 
+# --- git hooks ---------------------------------------------------------------
+# .githooks/pre-push runs the pr-self-review gate (see .claude/skills/pr-self-review).
+if [ "$(git config --get core.hooksPath || true)" != ".githooks" ]; then
+  git config core.hooksPath .githooks
+  log "enabled repo git hooks (core.hooksPath=.githooks)"
+fi
+
 # --- Postgres ----------------------------------------------------------------
 # The container name is fixed (container_name: devdigest-postgres), so if one is
 # already running (possibly under another compose project) we reuse it instead

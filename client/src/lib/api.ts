@@ -5,18 +5,9 @@
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:3001";
 
-export class ApiError extends Error {
-  status: number;
-  code?: string;
-  details?: unknown;
-  constructor(message: string, status: number, code?: string, details?: unknown) {
-    super(message);
-    this.name = "ApiError";
-    this.status = status;
-    this.code = code;
-    this.details = details;
-  }
-}
+import { ApiError } from "./api-error";
+
+export { ApiError };
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;

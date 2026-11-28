@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# pr-self-review gate for pushes from the terminal. Enabled by scripts/dev.sh
+# (git config core.hooksPath .githooks). Bypass: PR_SELF_REVIEW_SKIP=1 or --no-verify.
+ROOT="$(git rev-parse --show-toplevel)"
+exec node "$ROOT/.claude/skills/pr-self-review/scripts/prsr.mjs" gate --pre-push

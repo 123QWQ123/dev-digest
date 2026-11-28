@@ -106,3 +106,36 @@ export function latestReviewPerAgent(rows: ReviewRoundRow[]): Map<string, string
   }
   return out;
 }
+
+/** Rows newest-first → PR id → the latest review's score. */
+export function latestScorePerPr(
+  rows: readonly { prId: string; score: number | null }[],
+): Map<string, { score: number | null }> {
+  const out = new Map<string, { score: number | null }>();
+  for (const r of rows) if (!out.has(r.prId)) out.set(r.prId, { score: r.score });
+  return out;
+}
+
+/**
+ * PR id → the latest round's review ids + their summed severities, from the
+ * round's review ids (`latestReviewPerAgent`) and the findings of those reviews.
+ */
+export function roundSeverities(
+  roundIds: Map<string, string[]>,
+  findings: readonly { reviewId: string; severity: string }[],
+): Map<string, { reviewIds: string[]; counts: SeverityCounts }> {
+  const byReview = new Map<string, { severity: string }[]>();
+  for (const f of findings) {
+    const list = byReview.get(f.reviewId);
+    if (list) list.push(f);
+    else byReview.set(f.reviewId, [f]);
+  }
+  const out = new Map<string, { reviewIds: string[]; counts: SeverityCounts }>();
+  for (const [prId, reviewIds] of roundIds) {
+    out.set(prId, {
+      reviewIds,
+      counts: rollupSeverities(reviewIds.flatMap((id) => byReview.get(id) ?? [])),
+    });
+  }
+  return out;
+}

@@ -133,7 +133,10 @@ export class OpenRouterProvider implements LLMProvider {
         pricing?: { prompt?: string; completion?: string };
       }>;
     };
-    const models: ModelInfo[] = (json.data ?? []).map((m) => {
+    // `:batch` variants are served only by OpenRouter's Batch API; chat/completions
+    // answers 404 ("cannot be used with the chat/completions endpoint"), so they
+    // must never be offered in a model picker.
+    const models: ModelInfo[] = (json.data ?? []).filter((m) => !isBatchOnly(m.id)).map((m) => {
       const prompt = Number(m.pricing?.prompt);
       const completion = Number(m.pricing?.completion);
       // OpenRouter uses -1 as a sentinel for variable-priced router pseudo-models
@@ -161,4 +164,9 @@ export class OpenRouterProvider implements LLMProvider {
   async embed(_texts: string[]): Promise<number[][]> {
     throw new Error(NOT_SUPPORTED);
   }
+}
+
+/** OpenRouter model ids usable only through the Batch API (e.g. `anthropic/claude-haiku-5.5:batch`). */
+export function isBatchOnly(id: string): boolean {
+  return id.endsWith(':batch');
 }

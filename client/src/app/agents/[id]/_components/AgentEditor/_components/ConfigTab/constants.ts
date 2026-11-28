@@ -11,3 +11,6 @@ export const CI_FAIL_ON_VALUES: readonly CiFailOn[] = ["never", "critical", "war
 
 /** Output-schema options (only one supported in MVP). */
 export const OUTPUT_SCHEMA_VALUE = "Standard findings JSON";
+
+/** Soft size guide for the system prompt (design: "412 / 8,000 tokens"). Not enforced. */
+export const SYSTEM_PROMPT_TOKEN_BUDGET = 8_000;

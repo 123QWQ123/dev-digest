@@ -1,11 +1,12 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { RunRequest } from '@devdigest/shared';
+import { z } from 'zod';
+import { ReviewRunResponse, RunRequest } from '@devdigest/shared';
 import type { RunEvent } from '@devdigest/shared';
 import { getContext } from '../_shared/context.js';
 import { IdParams } from '../_shared/schemas.js';
 import { NotFoundError } from '../../platform/errors.js';
-import { ReviewService } from './service.js';
+import { createReviewService } from './compose.js';
 
 /**
  * reviews module.
@@ -16,20 +17,25 @@ import { ReviewService } from './service.js';
  *   POST   /findings/:id/(accept|dismiss)              → finding actions
  */
 const FINDING_ACTIONS = ['accept', 'dismiss'] as const;
+/** RunRequest where a missing body (Fastify hands the validator null/undefined) means `{}`. */
+const OptionalRunRequest = z.preprocess((v) => v ?? {}, RunRequest);
 export default async function reviewsRoutes(appBase: FastifyInstance) {
   const app = appBase.withTypeProvider<ZodTypeProvider>();
   const { container } = app;
-  const service = new ReviewService(container);
+  const service = createReviewService(container);
 
   // ---- Run a review (manual trigger) -------------------------------
   // Tight per-route limit: each call can fan out to expensive LLM runs.
-  // Body stays a tolerant manual parse (both fields optional; empty body is OK).
+  // Both fields optional; an empty/missing body defaults to {} (validated at the edge).
   app.post(
     '/pulls/:id/review',
-    { schema: { params: IdParams }, config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
-    async (req) => {
+    {
+      schema: { params: IdParams, body: OptionalRunRequest, response: { 200: ReviewRunResponse } },
+      config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+    },
+    async (req): Promise<ReviewRunResponse> => {
     const { workspaceId } = await getContext(container, req);
-    const body = RunRequest.parse(req.body ?? {});
+    const body = req.body;
     const targets = await service.resolveTargets(workspaceId, {
       ...(body.agentId !== undefined ? { agentId: body.agentId } : {}),
       ...(body.all !== undefined ? { all: body.all } : {}),

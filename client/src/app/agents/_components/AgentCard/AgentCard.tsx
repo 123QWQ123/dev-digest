@@ -1,12 +1,14 @@
-/* AgentCard — model chip, skills count, enabled toggle. Stats are an A5 mount;
-   we render the provider/model + skill count here. */
+/* AgentCard — model chip, skills count, enabled toggle and a 30-day stats
+   line (runs · accept rate · avg cost) when the list payload carries it. */
 "use client";
 
 import React from "react";
 import { useTranslations } from "next-intl";
 import { Icon, Badge, Toggle } from "@devdigest/ui";
 import type { Agent } from "@devdigest/shared";
-import { useDeleteAgent } from "../../../../lib/hooks/agents";
+import { useDeleteAgent } from "@/lib/hooks/agents";
+import { formatCost } from "@/components/run-cost";
+import { formatPercent } from "@/components/stats";
 import { modelColor } from "./helpers";
 import { s } from "./styles";
 
@@ -69,6 +71,17 @@ export function AgentCard({
           </Badge>
         )}
       </div>
+      {ag.stats && ag.stats.runs > 0 && (
+        <div style={s.statsRow} title={t("card.statsHint")}>
+          <span>{t("card.runs", { count: ag.stats.runs })}</span>
+          {ag.stats.accept_rate != null && (
+            <span style={s.accept}>{t("card.accept", { value: formatPercent(ag.stats.accept_rate) })}</span>
+          )}
+          {ag.stats.avg_cost_usd != null && (
+            <span>{t("card.avgCost", { value: formatCost(ag.stats.avg_cost_usd) })}</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

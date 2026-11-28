@@ -71,8 +71,11 @@ flowchart TB
   subgraph Review["Review & runs"]
     reviews["reviews<br/>/pulls/:id/review · /reviews · /findings/:id/(accept|dismiss)<br/>/runs/:id/(events|trace)"]
   end
-  subgraph Agents["Agents"]
-    agents["agents<br/>/agents · /agents/:id"]
+  subgraph Agents["Agents & skills"]
+    agents["agents<br/>/agents · /agents/:id · /agents/:id/skills (GET · PUT ordered set)<br/>/agents/:id/stats"]
+    skills["skills (M2)<br/>/skills · /skills/:id · /skills/:id/(stats|versions(/:v/restore))<br/>/skills/import/preview"]
+    tokens["tokens<br/>POST /tokens/count"]
+    conventions["conventions (M2)<br/>/repos/:id/conventions (GET · POST extract · POST skill)<br/>PATCH /conventions/:id"]
   end
   subgraph Intel["Repo intelligence"]
     repoIntel["repo-intel<br/>/repos/:id/index-state · /resync"]
@@ -128,6 +131,14 @@ What the reviewer actually sends to the model is assembled in
   demo / test / not for production / do not flag" never descope the review — real
   defects are reported at full severity regardless. We deliberately do **not**
   keyword-scan untrusted text (a denylist only catches one phrasing).
+- **Skills (M2) are trusted-by-choice instructions, not untrusted data.** The
+  executor loads the agent's *effective* skills (link enabled AND skill enabled,
+  in link order, `AgentsRepository.effectiveSkills`) and renders each as
+  `### <name>` + body in the user message's `## Skills / rules` block. They are
+  NOT `<untrusted>`-wrapped (that would neutralise them); the trust decision is
+  made at import time (server-side preview, executables never read or run,
+  explicit confirmation, "untrusted" badge). The trace records
+  `prompt_assembly.skills_used` (name + version) and per-slot `prompt_tokens`.
 - **Grounding is mandatory.** Every finding must cite a line that exists in the
   diff or it is dropped (`groundFindings`), and the score is recomputed from the
   surviving findings — the model's self-reported score is ignored.

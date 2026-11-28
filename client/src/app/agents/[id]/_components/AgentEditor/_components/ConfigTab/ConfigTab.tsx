@@ -2,15 +2,26 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
-import { FormField, TextInput, SelectInput, SearchableSelect, Textarea, Toggle, Button } from "@devdigest/ui";
+import { FormField, TextInput, SelectInput, SearchableSelect, Toggle, Button } from "@devdigest/ui";
 import type { Agent, CiFailOn, Provider, ReviewStrategy } from "@devdigest/shared";
-import { useUpdateAgent, useProviderModels } from "../../../../../../../lib/hooks/agents";
-import { useToast } from "../../../../../../../lib/toast";
-import { toModelOptions } from "../../../../../../../lib/model-label";
-import { CI_FAIL_ON_VALUES, OUTPUT_SCHEMA_VALUE, PROVIDER_OPTIONS, STRATEGY_VALUES } from "./constants";
+import { useUpdateAgent, useProviderModels } from "@/lib/hooks/agents";
+import { useToast } from "@/lib/toast";
+import { toModelOptions } from "@/lib/model-label";
+import { PromptEditor } from "@/components/prompt-editor";
+import {
+  CI_FAIL_ON_VALUES,
+  OUTPUT_SCHEMA_VALUE,
+  PROVIDER_OPTIONS,
+  STRATEGY_VALUES,
+  SYSTEM_PROMPT_TOKEN_BUDGET,
+} from "./constants";
 import { s } from "./styles";
 
-/** Config tab — name/description/provider/model/system-prompt + enabled toggle. */
+/**
+ * Config tab — name/description/provider/model/system-prompt + enabled toggle.
+ * The form is seeded from `agent` once; the parent renders it with `key={agent.id}`
+ * so switching agents remounts it instead of syncing state in an effect.
+ */
 export function ConfigTab({ agent }: { agent: Agent }) {
   const t = useTranslations("agents");
   const toast = useToast();
@@ -25,18 +36,6 @@ export function ConfigTab({ agent }: { agent: Agent }) {
   const [repoIntel, setRepoIntel] = React.useState(agent.repo_intel);
   const [enabled, setEnabled] = React.useState(agent.enabled);
 
-  // Reset local form when switching agents.
-  React.useEffect(() => {
-    setName(agent.name);
-    setDescription(agent.description);
-    setProvider(agent.provider);
-    setModel(agent.model);
-    setSystemPrompt(agent.system_prompt);
-    setStrategy(agent.strategy);
-    setCiFailOn(agent.ci_fail_on);
-    setRepoIntel(agent.repo_intel);
-    setEnabled(agent.enabled);
-  }, [agent.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: models } = useProviderModels(provider);
   // Show the price (USD per 1M in/out tokens) in the label when the provider
@@ -128,7 +127,15 @@ export function ConfigTab({ agent }: { agent: Agent }) {
         </label>
       </FormField>
       <FormField label={t("config.systemPrompt")} hint={t("config.systemPromptHint")}>
-        <Textarea value={systemPrompt} onChange={setSystemPrompt} rows={8} mono />
+        <PromptEditor
+          value={systemPrompt}
+          onChange={setSystemPrompt}
+          fileName="system-prompt.md"
+          dirty={systemPrompt !== agent.system_prompt}
+          tokenBudget={SYSTEM_PROMPT_TOKEN_BUDGET}
+          rows={12}
+          ariaLabel={t("config.systemPrompt")}
+        />
       </FormField>
       <FormField label={t("config.outputSchema")}>
         <SelectInput value={OUTPUT_SCHEMA_VALUE} options={[OUTPUT_SCHEMA_VALUE]} />

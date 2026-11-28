@@ -286,3 +286,17 @@ export const ApiErrorBody = z.object({
   }),
 });
 export type ApiErrorBody = z.infer<typeof ApiErrorBody>;
+
+// ---------------------------------------------------------------------------
+// Token counting (M2 editors: skill body, agent system prompt)
+// ---------------------------------------------------------------------------
+
+/** Largest text the counter accepts (≈ a few times the biggest prompt block). */
+export const COUNT_TOKENS_MAX_CHARS = 100_000;
+
+export const CountTokensInput = z.object({ text: z.string().max(COUNT_TOKENS_MAX_CHARS) });
+export type CountTokensInput = z.infer<typeof CountTokensInput>;
+
+/** Same encoder the run trace uses for `prompt_tokens` (cl100k_base). */
+export const TokenCount = z.object({ tokens: z.number().int() });
+export type TokenCount = z.infer<typeof TokenCount>;

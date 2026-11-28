@@ -41,15 +41,35 @@ export const PromptAssembly = z.object({
   skills: z.string().nullish(),
   memory: z.string().nullish(),
   specs: z.string().nullish(),
-  /** Callers-of-changed-symbols digest (repo-intel); null when absent. */
+  /** Callers-of-changed-symbols digest (T1.3); null when absent. */
   callers: z.string().nullish(),
-  /** Repo skeleton / map (repo-intel); null when absent. */
+  /** Repo skeleton / map (T3); null when absent. Enables per-slot token
+      attribution in the run trace. */
   repo_map: z.string().nullish(),
   /** PR author's description/body (truncated); null when absent. */
   pr_description: z.string().nullish(),
   user: z.string(),
+  /** Skills rendered into `skills`, in prompt order (M2); absent on older traces. */
+  skills_used: z
+    .array(z.object({ id: z.string(), name: z.string(), version: z.number().int() }))
+    .optional(),
 });
 export type PromptAssembly = z.infer<typeof PromptAssembly>;
+
+export const PromptSlot = z.enum([
+  'system',
+  'skills',
+  'memory',
+  'specs',
+  'callers',
+  'repo_map',
+  'pr_description',
+  'user',
+]);
+export type PromptSlot = z.infer<typeof PromptSlot>;
+
+export const PromptTokens = z.record(PromptSlot, z.number().int());
+export type PromptTokens = z.infer<typeof PromptTokens>;
 
 export const MemoryPulled = z.object({
   pr: z.number().int().nullish(),
@@ -80,6 +100,8 @@ export const RunTrace = z.object({
   }),
   stats: RunStats,
   prompt_assembly: PromptAssembly,
+  /** Token count per non-empty prompt slot (M2); absent on older traces. */
+  prompt_tokens: PromptTokens.optional(),
   tool_calls: z.array(ToolCall),
   raw_output: z.string(),
   memory_pulled: z.array(MemoryPulled),

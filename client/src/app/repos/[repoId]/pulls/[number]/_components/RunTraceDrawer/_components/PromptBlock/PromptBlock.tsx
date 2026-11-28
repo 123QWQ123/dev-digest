@@ -5,6 +5,7 @@
 import React from "react";
 import { useTranslations } from "next-intl";
 import { Button, Icon, Modal } from "@devdigest/ui";
+import { formatTokenCount } from "@/components/run-cost";
 import { s } from "../../styles";
 import { PromptModalBody } from "../PromptModalBody";
 
@@ -20,7 +21,21 @@ const miniBtnStyle: React.CSSProperties = {
   cursor: "pointer",
 };
 
-export function PromptBlock({ label, text, color }: { label: string; text: string; color: string }) {
+export function PromptBlock({
+  label,
+  text,
+  color,
+  tokens,
+  meta,
+}: {
+  label: string;
+  text: string;
+  color: string;
+  /** Token count of this slot (M2 traces); omitted on older traces. */
+  tokens?: number;
+  /** Extra line under the header (e.g. which skills, at which version). */
+  meta?: React.ReactNode;
+}) {
   const t = useTranslations("runs");
   const [open, setOpen] = React.useState(false);
   const [full, setFull] = React.useState(false);
@@ -35,6 +50,11 @@ export function PromptBlock({ label, text, color }: { label: string; text: strin
       <div onClick={() => setOpen((o) => !o)} style={s.promptHead}>
         <span style={s.promptDot(color)} />
         <span style={s.promptLabel}>{label}</span>
+        {tokens != null && (
+          <span className="mono" style={{ fontSize: 12, color: "var(--text-muted)" }}>
+            {t("trace.prompt.tokens", { count: formatTokenCount(tokens) })}
+          </span>
+        )}
         <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
           <button
             type="button"
@@ -65,6 +85,7 @@ export function PromptBlock({ label, text, color }: { label: string; text: strin
           </span>
         </span>
       </div>
+      {meta && <div style={{ padding: "0 12px 8px 30px", fontSize: 12, color: "var(--text-secondary)" }}>{meta}</div>}
       {open && (
         <pre className="mono" style={s.promptPre}>
           {text || "—"}
