@@ -15,7 +15,7 @@ import { DETAIL_TAB_KEYS } from "./constants";
 import { filterSkills } from "./helpers";
 import { SkillCard } from "./_components/SkillCard";
 import { SkillDetail } from "./_components/SkillDetail";
-import { SkillForm, EMPTY_SKILL, type SkillFormValues } from "./_components/SkillForm";
+import { SkillForm, EMPTY_SKILL, type SkillFormValues } from "@/components/skills";
 import { ImportSkillDrawer } from "./_components/ImportSkillDrawer";
 import { s } from "./styles";
 

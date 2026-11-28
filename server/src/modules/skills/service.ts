@@ -18,6 +18,15 @@ import {
 } from './helpers.js';
 import { previewSkillImport, SkillImportError } from './domain/import.js';
 
+/** Input of `createExtracted` (the Conventions Extractor's skill). */
+export interface ExtractedSkillInput {
+  name: string;
+  description: string;
+  body: string;
+  enabled?: boolean;
+  evidenceFiles: string[];
+}
+
 /**
  * M2 — skills service. CRUD, version history/restore and the import preview.
  * A skill is TEXT ONLY (name, description, type, markdown body): it never runs
@@ -64,6 +73,28 @@ export class SkillsService {
         body: input.body,
         enabled: input.enabled,
         note: input.note ?? (input.source === 'imported' ? 'Imported' : 'Initial version'),
+      }),
+    );
+    return toSkillDto({ ...row, agentCount: 0 });
+  }
+
+  /**
+   * Create a skill built by the Conventions Extractor: always `type: convention`,
+   * `source: extracted`, with the evidence files it was derived from. Kept apart
+   * from `create` so the public `POST /skills` contract cannot claim `extracted`.
+   */
+  async createExtracted(workspaceId: string, input: ExtractedSkillInput): Promise<Skill> {
+    const row = await this.guardDuplicate(() =>
+      this.repo.insert({
+        workspaceId,
+        name: input.name,
+        description: input.description,
+        type: 'convention',
+        source: 'extracted',
+        body: input.body,
+        enabled: input.enabled,
+        evidenceFiles: input.evidenceFiles,
+        note: 'Extracted from repo conventions',
       }),
     );
     return toSkillDto({ ...row, agentCount: 0 });

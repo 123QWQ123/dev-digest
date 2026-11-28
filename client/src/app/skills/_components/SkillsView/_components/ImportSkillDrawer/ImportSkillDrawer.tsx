@@ -8,7 +8,7 @@ import { useCreateSkill, useImportSkillPreview } from "@/lib/hooks/skills";
 import { useToast } from "@/lib/toast";
 import { IMPORT_MAX_BYTES } from "../../constants";
 import { fileToBase64 } from "../../helpers";
-import { SkillForm, type SkillFormValues } from "../SkillForm";
+import { SkillForm, type SkillFormValues } from "@/components/skills";
 import { s } from "./styles";
 
 /**

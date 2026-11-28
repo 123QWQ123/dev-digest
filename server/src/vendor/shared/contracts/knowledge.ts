@@ -248,6 +248,13 @@ export const CommunitySkill = z.object({
 export type CommunitySkill = z.infer<typeof CommunitySkill>;
 
 // ---- Conventions ----
+/** 1-based inclusive line range of a convention's evidence snippet. */
+export const EvidenceLines = z.object({
+  start: z.number().int().positive(),
+  end: z.number().int().positive(),
+});
+export type EvidenceLines = z.infer<typeof EvidenceLines>;
+
 export const ConventionCandidate = z.object({
   id: z.string(),
   rule: z.string(),
@@ -255,8 +262,78 @@ export const ConventionCandidate = z.object({
   evidence_snippet: z.string(),
   confidence: z.number().min(0).max(1),
   accepted: z.boolean(),
+  /** Where the snippet was found in `evidence_path` (null for legacy rows). */
+  evidence_lines: EvidenceLines.nullish(),
+  /** When the scan that produced this candidate ran. */
+  created_at: z.string().nullish(),
 });
 export type ConventionCandidate = z.infer<typeof ConventionCandidate>;
+
+/** Limits shared by the extractor and the editor. */
+export const CONVENTION_RULE_MAX = 500;
+export const CONVENTION_SNIPPET_MAX = 1_500;
+export const CONVENTION_MAX_CANDIDATES = 15;
+
+/** Structured LLM output of the extractor (schemaName `ConventionExtraction`). */
+export const ConventionExtraction = z.object({
+  conventions: z
+    .array(
+      z.object({
+        rule: z.string(),
+        evidence_path: z.string(),
+        evidence_snippet: z.string(),
+        confidence: z.number(),
+      }),
+    )
+    .max(CONVENTION_MAX_CANDIDATES),
+});
+export type ConventionExtraction = z.infer<typeof ConventionExtraction>;
+
+/** `GET /repos/:id/conventions`. */
+export const ConventionList = z.object({
+  items: z.array(ConventionCandidate),
+  /** Newest scan time across the repo's candidates; null when never scanned. */
+  last_scan_at: z.string().nullable(),
+});
+export type ConventionList = z.infer<typeof ConventionList>;
+
+/** `POST /repos/:id/conventions/extract`. Cost is reported, not stored. */
+export const ExtractConventionsResult = ConventionList.extend({
+  /** Files sent to the model (configs + ranked samples). */
+  sampled_files: z.number().int(),
+  /** Candidates kept after evidence verification / dropped by it. */
+  kept: z.number().int(),
+  dropped: z.number().int(),
+  model: z.string(),
+  tokens_in: z.number().int().nullable(),
+  tokens_out: z.number().int().nullable(),
+  /** null = unknown (unpriced model); 0 = known free. */
+  cost_usd: z.number().nullable(),
+});
+export type ExtractConventionsResult = z.infer<typeof ExtractConventionsResult>;
+
+/** `PATCH /conventions/:id`: edit the rule text and/or accept/reject. */
+export const UpdateConventionInput = z
+  .object({
+    rule: z.string().trim().min(1).max(CONVENTION_RULE_MAX).optional(),
+    accepted: z.boolean().optional(),
+  })
+  .refine((v) => v.rule !== undefined || v.accepted !== undefined, {
+    message: 'Provide rule and/or accepted',
+  });
+export type UpdateConventionInput = z.infer<typeof UpdateConventionInput>;
+
+/**
+ * `POST /repos/:id/conventions/skill`: save the accepted candidates as one skill.
+ * The server forces `type: convention`, `source: extracted` and `evidence_files`.
+ */
+export const CreateConventionSkillInput = z.object({
+  name: SkillName,
+  description: z.string().trim().min(1).max(SKILL_DESCRIPTION_MAX),
+  body: z.string().trim().min(1).max(SKILL_BODY_MAX),
+  enabled: z.boolean().optional(),
+});
+export type CreateConventionSkillInput = z.infer<typeof CreateConventionSkillInput>;
 
 // ---- Agents ----
 // 'openrouter' routes through the OpenAI-compatible API (OpenAIProvider with a

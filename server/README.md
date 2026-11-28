@@ -75,6 +75,7 @@ flowchart TB
     agents["agents<br/>/agents · /agents/:id · /agents/:id/skills (GET · PUT ordered set)<br/>/agents/:id/stats"]
     skills["skills (M2)<br/>/skills · /skills/:id · /skills/:id/(stats|versions(/:v/restore))<br/>/skills/import/preview"]
     tokens["tokens<br/>POST /tokens/count"]
+    conventions["conventions (M2)<br/>/repos/:id/conventions (GET · POST extract · POST skill)<br/>PATCH /conventions/:id"]
   end
   subgraph Intel["Repo intelligence"]
     repoIntel["repo-intel<br/>/repos/:id/index-state · /resync"]

@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, jsonb, timestamp, doublePrecision, boolean, vector, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, jsonb, timestamp, doublePrecision, boolean, vector, index, integer } from 'drizzle-orm/pg-core';
 import { now } from './_shared';
 import { workspaces } from './core';
 import { repos } from './repos';
@@ -28,15 +28,23 @@ export const memory = pgTable(
   (t) => ({ wsIdx: index('memory_ws_idx').on(t.workspaceId) }),
 );
 
-export const conventions = pgTable('conventions', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  workspaceId: uuid('workspace_id')
-    .notNull()
-    .references(() => workspaces.id, { onDelete: 'cascade' }),
-  repoId: uuid('repo_id').references(() => repos.id, { onDelete: 'cascade' }),
-  rule: text('rule').notNull(),
-  evidencePath: text('evidence_path'),
-  evidenceSnippet: text('evidence_snippet'),
-  confidence: doublePrecision('confidence'),
-  accepted: boolean('accepted').notNull().default(false),
-});
+export const conventions = pgTable(
+  'conventions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    workspaceId: uuid('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    repoId: uuid('repo_id').references(() => repos.id, { onDelete: 'cascade' }),
+    rule: text('rule').notNull(),
+    evidencePath: text('evidence_path'),
+    evidenceSnippet: text('evidence_snippet'),
+    // M2 Conventions Extractor: 1-based line range where the snippet was verified.
+    evidenceLineStart: integer('evidence_line_start'),
+    evidenceLineEnd: integer('evidence_line_end'),
+    confidence: doublePrecision('confidence'),
+    accepted: boolean('accepted').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({ repoIdx: index('conventions_repo_idx').on(t.repoId) }),
+);

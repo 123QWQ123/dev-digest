@@ -1,0 +1,63 @@
+import type { CSSProperties } from "react";
+
+/** Co-located styles for ConventionCard. Per-side border longhands (see INSIGHTS). */
+export const s = {
+  card: (accepted: boolean): CSSProperties => ({
+    display: "flex",
+    gap: 20,
+    padding: "16px 18px",
+    background: "var(--bg-elevated)",
+    borderTop: "1px solid var(--border)",
+    borderRight: "1px solid var(--border)",
+    borderBottom: "1px solid var(--border)",
+    borderLeft: `3px solid ${accepted ? "var(--ok)" : "var(--border)"}`,
+    borderRadius: 10,
+    opacity: accepted ? 1 : 0.85,
+  }),
+  main: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 } satisfies CSSProperties,
+  ruleRow: { display: "flex", alignItems: "flex-start", gap: 8 } satisfies CSSProperties,
+  rule: {
+    fontSize: 14,
+    fontWeight: 600,
+    fontStyle: "italic",
+    color: "var(--text-primary)",
+    lineHeight: 1.45,
+    flex: 1,
+  } satisfies CSSProperties,
+  editActions: { display: "flex", gap: 8, marginTop: 6 } satisfies CSSProperties,
+  evidence: {
+    border: "1px solid var(--border)",
+    borderRadius: 8,
+    background: "var(--code-bg)",
+    overflow: "hidden",
+  } satisfies CSSProperties,
+  evidenceHead: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "6px 10px",
+    borderBottom: "1px solid var(--border)",
+    fontSize: 12,
+    color: "var(--text-secondary)",
+  } satisfies CSSProperties,
+  snippet: {
+    margin: 0,
+    padding: "10px 12px",
+    fontSize: 12,
+    lineHeight: 1.55,
+    overflowX: "auto",
+    whiteSpace: "pre",
+    color: "var(--text-primary)",
+  } satisfies CSSProperties,
+  confidence: { display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "var(--text-muted)" } satisfies CSSProperties,
+  bar: { width: 72 } satisfies CSSProperties,
+  side: { display: "flex", flexDirection: "column", gap: 8, width: 130, flexShrink: 0 } satisfies CSSProperties,
+  copyBtn: {
+    background: "none",
+    border: "none",
+    padding: 2,
+    cursor: "pointer",
+    color: "var(--text-muted)",
+    display: "inline-flex",
+  } satisfies CSSProperties,
+} as const;

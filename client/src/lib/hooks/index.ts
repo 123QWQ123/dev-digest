@@ -12,3 +12,5 @@ export { useRunTrace } from "./trace";
 export { useRepoIntelStatus, useResyncRepoIntel } from "./repo-intel";
 export type { RepoIntelState } from "./repo-intel";
 export { useTokenCount } from "./tokens";
+export { useConventions, useExtractConventions, useUpdateConvention, useCreateConventionSkill } from "./conventions";
+export type { UpdateConventionArgs } from "./conventions";

@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Badge, Button, FormField, SelectInput, TextInput, Toggle } from "@devdigest/ui";
 import type { SkillType } from "@devdigest/shared";
 import { PromptEditor } from "@/components/prompt-editor";
-import { SKILL_BODY_MAX, SKILL_NAME_RE, SKILL_TYPES } from "../../constants";
+import { SKILL_BODY_MAX, SKILL_NAME_RE, SKILL_TYPES } from "../constants";
 import { s } from "./styles";
 
 export interface SkillFormValues {
@@ -50,6 +50,8 @@ export function SkillForm({
   submitBlocked = false,
   submitLabel,
   version,
+  types = SKILL_TYPES,
+  hideTitle = false,
 }: {
   initial: SkillFormValues;
   mode: "create" | "edit";
@@ -64,6 +66,10 @@ export function SkillForm({
   submitLabel?: string;
   /** Current version, shown next to the title in edit mode. */
   version?: number;
+  /** Selectable types (e.g. only `convention` for an extracted skill). */
+  types?: readonly SkillType[];
+  /** Hide the heading when a container (modal) already shows one. */
+  hideTitle?: boolean;
 }) {
   const t = useTranslations("skills");
   const [v, setV] = React.useState(initial);
@@ -71,13 +77,13 @@ export function SkillForm({
     setV((cur) => ({ ...cur, [k]: value }));
   const valid = isValidSkill(v);
   const bodyDirty = v.body !== initial.body;
-  const typeOptions = SKILL_TYPES.map((ty) => ({ value: ty, label: t(`type.${ty}`) }));
+  const typeOptions = types.map((ty) => ({ value: ty, label: t(`type.${ty}`) }));
 
   return (
     <div style={s.wrap}>
       <div style={s.header}>
         <div style={s.titleGroup}>
-          <h2 style={s.h2}>{title ?? (mode === "create" ? t("form.createTitle") : t("form.title"))}</h2>
+          {!hideTitle && <h2 style={s.h2}>{title ?? (mode === "create" ? t("form.createTitle") : t("form.title"))}</h2>}
           {version != null && (
             <Badge color="var(--text-secondary)" icon="GitCommit" mono>
               v{version}

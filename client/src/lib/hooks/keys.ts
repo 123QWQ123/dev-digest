@@ -30,6 +30,7 @@ export const queryKeys = {
   /** Prefix matching every provider's model list (for invalidation). */
   providerModelsAll: () => ["provider-models"] as const,
   repoIntelState: (repoId: Id) => ["repo-intel-state", repoId] as const,
+  conventions: (repoId: Id) => ["conventions", repoId] as const,
   prActiveRuns: (prId: Id) => ["pr-active-runs", prId] as const,
   prRuns: (prId: Id) => ["pr-runs", prId] as const,
   reviews: (prId: Id) => ["reviews", prId] as const,

@@ -15,6 +15,8 @@
 - 2026-11-25 · The PR-list table card (`s.tableCard`) is deliberately `overflow: visible` — with `hidden` the FINDINGS hover popover under the last row is clipped (a 1-PR list shows nothing). Corner rounding moved to the last row (`s.row(hover, last)`); don't restore `overflow: hidden` (`src/app/repos/[repoId]/pulls/styles.ts`)
 - 2026-11-27 · React Query keys live only in `lib/hooks/keys.ts` (`queryKeys.*`); pages never call `useQueryClient` — invalidation is a hook (`useRunStateInvalidation`). `providerModels(p)` ≠ `providerModelsAll()` (2-element key vs prefix), kept identical to the old literals; `keys.test.ts` pins them (`src/lib/hooks/keys.ts`)
 - 2026-11-27 · UI code imports `ApiError` from `@/lib/api-error`, never `@/lib/api` — `fe-api-client-only-via-hooks` forbids app/components → `lib/api.ts` so data access stays in `lib/hooks/*` (`src/lib/api-error.ts`)
+- 2026-11-28 · A component needed by two routes can't stay in a route's `_components/` (arch:check forbids cross-route imports) — `SkillForm` + its limits moved to `src/components/skills/`, with `types` (restrict the type select) and `hideTitle` (inside a `Modal`) props for the conventions modal (`src/components/skills/SkillForm/SkillForm.tsx:53`)
+- 2026-11-28 · `isUntrusted` = `source !== "manual"`, so skills saved by the Conventions Extractor (`source: extracted`) show the "imported — untrusted" badge/notice — intended (LLM text derived from repo code), but the badge wording says "imported" (`src/app/skills/_components/SkillsView/helpers.ts:15`)
 
 ## Tool & Library Notes
 - 2026-11-24 · jest-dom `toHaveTextContent` normalizes whitespace, so it fails on strings with a narrow no-break space (`\u202F`, used as the thousands separator by `formatTokenCount`) — assert `el.textContent` with `toBe` instead (`src/app/repos/[repoId]/pulls/[number]/_components/RunHistory/RunHistory.test.tsx:81`)
@@ -42,5 +44,6 @@
 - 2026-11-25 · Supersedes the FINDINGS-column note above: counts are the **latest round** (`PrMeta.latest_round`, newest review of EVERY agent, older reruns dropped), not the single latest review; each finding deep-links into its own run (`src/app/repos/[repoId]/pulls/_components/PrFindingsCell/PrFindingsCell.tsx`)
 - 2026-11-25 · Timeline got a SUGGESTION counter (💡 N) — `SeverityCountPopover` now takes `CountedSeverity` with a per-severity `labelKey`
 - 2026-11-27 · M2 Skills: `/skills` page (Config/Preview/Versions, import drawer) + agent editor Skills tab (optimistic `useSetAgentSkills`, native drag + ↑/↓); trace shows `skills_used` + per-slot `prompt_tokens` (`specs/m2-skills.md`)
+- 2026-11-28 · M2 Conventions: `/repos/[repoId]/conventions` (ConventionCard accept/reject/inline edit, Accept all, Create skill modal drafting `<repo>-conventions` via `buildSkillDraft`), sidebar item `g c`, hooks `lib/hooks/conventions.ts` (`specs/m2-conventions.md`)
 
 ## Open Questions

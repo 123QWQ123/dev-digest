@@ -99,6 +99,13 @@
       "when": 1795805133514,
       "tag": "0013_black_jack_murdock",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1795825907079,
+      "tag": "0014_brave_william_stryker",
+      "breakpoints": true
     }
   ]
 }

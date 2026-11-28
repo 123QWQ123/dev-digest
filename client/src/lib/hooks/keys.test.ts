@@ -20,6 +20,7 @@ describe("queryKeys", () => {
     expect(queryKeys.skill("s1")).toEqual(["skill", "s1"]);
     expect(queryKeys.skillVersions("s1")).toEqual(["skill-versions", "s1"]);
     expect(queryKeys.agentSkills("a1")).toEqual(["agent-skills", "a1"]);
+    expect(queryKeys.conventions("r1")).toEqual(["conventions", "r1"]);
   });
 
   it("the all-agent-skills prefix matches every agent's link set", () => {

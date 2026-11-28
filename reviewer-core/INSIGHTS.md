@@ -12,6 +12,7 @@
 ## Codebase Patterns
 
 ## Tool & Library Notes
+- 2026-11-28 · OpenRouter `/models` lists `:batch` variants (e.g. `anthropic/claude-haiku-5.5:batch`, ~65 of 440) that only the Batch API serves — chat/completions answers 404 "cannot be used with the chat/completions endpoint". `listModels` drops them via `isBatchOnly`, so neither the agent nor the Feature Models picker offers them; a workspace that already saved one must re-pick (`src/llm/openrouter.ts:139`)
 
 ## Recurring Errors & Fixes
 
